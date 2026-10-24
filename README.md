@@ -49,20 +49,25 @@ drawn facing the learner, showing only the main signing hand.
 
 ## Accuracy
 
-Tested on recordings from 3 signers whose recordings are not in the examples
-(`node tools/evaluate.js`, 200 recordings, 10 words):
+The 20 words were chosen with `tools/choose_words.js`: from a shortlist of 53 beginner
+words, it kept the 20 the grader tells apart best (keeping hello, please, mom and
+sleep). Testing each recording only against other people's examples, the closest
+word was correct 72% of the time and in the closest 3 86% of the time.
+
+Grading test (`node tools/evaluate.js`): recordings from 3 signers whose recordings
+are not used as examples. So far these test recordings cover 4 of the 20 words
+(80 recordings; the rest are still being downloaded), with 19 examples per word:
 
 | Difficulty (leniency) | Correct sign passes | A different sign passes |
 |---|---|---|
-| Hard (0.7) | 59% | 9% |
-| **Normal (1.25, default)** | **85%** | **31%** |
-| Easy (2.0) | 88% | 42% |
+| Hard (0.7) | 50% | 5% |
+| **Normal (1.25, default)** | **75%** | **15%** |
+| Easy (2.0) | 84% | 20% |
 
-These numbers come from a fairly small test (200 recordings from 3 people), so
-treat them as roughly ±5%. The grading distance limit was set using some of
-these same recordings, so they are somewhat optimistic.
+This is a small test, so treat the numbers as rough (±10%), and they come from
+dataset recordings rather than live webcam use.
 
-The default favors the learner: it is better to occasionally accept a sloppy
+The default favours the learner: it is better to occasionally accept a sloppy
 sign than to frustrate someone who signed correctly.
 
 ## Changing the look
