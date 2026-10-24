@@ -169,7 +169,7 @@ function showIdle() {
   $("result").hidden = true;
   $("result-actions").hidden = true;
   $("turn-actions").hidden = false;
-  $("camera-box").classList.remove("recording");
+  $("camera-box").classList.remove("recording", "counting");
   setBusy(false);
 }
 
@@ -189,7 +189,8 @@ async function startAttempt() {
   $("phase-bar").hidden = false;
   setPhase(0);
   try {
-    // Get ready: 3, 2, 1
+    // Get ready: 3, 2, 1 (camera dimmed)
+    $("camera-box").classList.add("counting");
     $("count-label").textContent = "Get ready…";
     requestAnimationFrame(() => setPhase(33, settings.COUNTDOWN_SECONDS));
     for (let i = settings.COUNTDOWN_SECONDS; i > 0; i--) {
@@ -198,6 +199,7 @@ async function startAttempt() {
     }
     // Sign
     $("countdown").classList.add("signing");
+    $("camera-box").classList.remove("counting");
     $("count-label").textContent = "SIGN NOW!";
     $("camera-box").classList.add("recording");
     setPhase(100, settings.RECORD_SECONDS);
@@ -216,6 +218,9 @@ async function startAttempt() {
     $("save").disabled = false;
   } catch (err) {
     console.error(err);
+    $("camera-box").classList.remove("recording", "counting");
+    $("countdown").hidden = true;
+    $("phase-bar").hidden = true;
     showResult({ kind: "rejected", problem: `Something went wrong (${err.message}). Please try again.` });
   } finally {
     setBusy(false);
