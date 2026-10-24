@@ -12,6 +12,7 @@ export const DEFAULT_DIFFICULTY = "normal";
 // Built-in quiz lists (learners can also make their own, see lists.js).
 // Words not in signs/words.json are skipped. Grading always compares against every word.
 export const DEFAULT_LISTS = [
+  { id: "demo", name: "Demo", words: ["sleep", "yes", "airplane"] },
   { id: "basics", name: "Everyday basics", words: ["hello", "please", "yes", "water", "hungry", "sleep"] },
   { id: "family", name: "Family & feelings", words: ["mom", "dad", "girl", "happy", "hungry"] },
   { id: "animals", name: "Animals", words: ["cow", "horse", "bird"] },
