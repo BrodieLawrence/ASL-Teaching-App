@@ -105,7 +105,7 @@ main {
   display: inline-flex; align-items: center; gap: 8px;
   min-height: 44px; padding: 8px 20px; border-radius: 14px;
   font-weight: 800; font-size: 17px;
-  transition: transform 0.08s, box-shadow 0.08s;
+  transition: transform 0.12s, box-shadow 0.12s, background-color 0.12s;
 }
 .btn:active:not(:disabled) { transform: translateY(4px); }
 .btn-primary {
@@ -177,6 +177,36 @@ main {
   border: 3px solid var(--secondary); background: var(--surface); color: var(--text);
 }
 .pill[aria-pressed="true"] { border-color: var(--accent); background: var(--accent); color: var(--on-accent); box-shadow: 0 4px 0 var(--accent-dark); }
+.pill { transition: transform 0.12s, box-shadow 0.12s, background-color 0.12s; }
+
+/* Hover: buttons get a little darker and lift slightly (their bottom edge grows).
+   Only on devices with a mouse, so taps on phones don't leave buttons "stuck" raised. */
+@media (hover: hover) {
+  .btn-primary:hover:not(:disabled):not(:active) {
+    background: color-mix(in srgb, var(--accent) 85%, black);
+    transform: translateY(-2px); box-shadow: 0 8px 0 var(--accent-dark);
+  }
+  .btn-quiet:hover:not(:disabled):not(:active) {
+    background: color-mix(in srgb, var(--page) 85%, var(--secondary));
+    transform: translateY(-2px); box-shadow: 0 6px 0 var(--secondary);
+  }
+  .pill:hover:not(:active) {
+    background: color-mix(in srgb, var(--surface) 85%, var(--secondary));
+    transform: translateY(-2px); box-shadow: 0 4px 0 var(--secondary);
+  }
+  .pill[aria-pressed="true"]:hover:not(:active) {
+    background: color-mix(in srgb, var(--accent) 85%, black);
+    box-shadow: 0 6px 0 var(--accent-dark);
+  }
+  .result-details summary:hover { color: var(--text); text-decoration: underline; }
+}
+.pill:active { transform: translateY(2px); }
+
+/* People who prefer less motion get the colour change without the movement. */
+@media (prefers-reduced-motion: reduce) {
+  .btn, .pill { transition: background-color 0.12s; }
+  .btn:hover, .btn:active, .pill:hover, .pill:active { transform: none !important; }
+}
 
 .panels { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
 @media (max-width: 860px) { .panels { grid-template-columns: minmax(0, 1fr); } }
