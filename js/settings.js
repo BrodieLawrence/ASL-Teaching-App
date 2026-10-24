@@ -32,7 +32,26 @@ export const WORD_LABELS = {
 // (the part after "v=" in the link), or { id, start, end } in seconds to play only part.
 // Current videos are from ASL University's "Signs" channel (youtube.com/@aslu).
 export const YOUTUBE_VIDEOS = {
+  hello: "FVjpLa8GqeM",
+  please: "rnb9FxPO7is",
+  mom: "DHl2-NT3mIM",
+  dad: "1Vllc4F5ic0",
+  yes: "0usayvOXzHo",
   sleep: "dXEqaWSEztY",
+  water: "-SdOfxGhb0A",
+  hungry: "8ZOUoDZkAoQ",
+  hot: "00cPyUsrC6M",
+  happy: "ZXHHO_DY6_A",
+  cow: "I2_nB2cXP58",
+  bird: "Bibgy-yjgYE",
+  horse: "rPRHSWtuCyg",
+  tree: "DMdPpkiUJso",
+  airplane: "u1pDng38AxE",
+  car: "YfwGL0ZIBqE",
+  girl: "pwh3cOdoiG4",
+  hat: "bul0cjvDEEE",
+  moon: "vtl8Wc8XCbk",   // modified-C version, matching how most dataset signers sign it
+  bath: "r8wxFtDjU5Y",
 };
 
 // Demonstration videos: videos/<word>.mp4. Words without a video show a stick figure.
