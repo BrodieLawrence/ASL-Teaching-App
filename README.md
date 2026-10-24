@@ -2,7 +2,9 @@
 
 - **Team name:** [TEAM NAME]
 - **Team members:** [NAMES]
-- **Live demo:** https://aslmasters.com
+- **Live demo:** https://aslmasters.com (served by GitHub Pages from the public
+  repository [BrodieLawrence/ASL-Teaching-App](https://github.com/BrodieLawrence/ASL-Teaching-App),
+  an identical copy of this code, because this repository is private)
 
 ## Disclosures
 
