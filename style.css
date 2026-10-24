@@ -196,10 +196,7 @@ main {
 .camera-box video, .camera-box canvas {
   position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1);
 }
-/* Dim the camera during "get ready", back to normal for "sign now".
-   Only the picture on screen is dimmed; the hand tracking still sees the full image. */
-.camera-box video { transition: filter 0.5s ease; }
-.camera-box.counting video { filter: brightness(0.4); }
+/* During "get ready" the camera is dimmed, then brightens back (see animateAttempt in app.js). */
 
 /* Frosted see-through boxes over the camera. */
 .frosted {

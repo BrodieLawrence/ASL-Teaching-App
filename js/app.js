@@ -169,14 +169,49 @@ function showIdle() {
   $("result").hidden = true;
   $("result-actions").hidden = true;
   $("turn-actions").hidden = false;
-  $("camera-box").classList.remove("recording", "counting");
+  $("camera-box").classList.remove("recording");
   setBusy(false);
 }
 
-function setPhase(percent, seconds) {
-  const fill = $("phase-fill");
-  fill.style.transition = seconds ? `width ${seconds}s linear` : "none";
-  fill.style.width = `${percent}%`;
+// Animates the attempt over time: the progress bar fills to halfway ("SIGN") during the
+// countdown and to the end while signing. The camera dims quickly when the countdown
+// starts, then brightens steadily until it is back to normal at "SIGN NOW!".
+// Only the picture on screen changes; the hand tracking always sees the full image.
+// Returns { startSigning(), stop() }: call startSigning at "SIGN NOW!" so the bar's second
+// half starts then (even on a slow computer where the countdown runs late).
+const DIM_SECONDS = 0.3;   // how quickly the camera dims after pressing Start
+const DIMMEST = 0.4;       // brightness at its darkest
+function animateAttempt() {
+  const fill = $("phase-fill"), video = $("video");
+  const countdown = settings.COUNTDOWN_SECONDS, record = settings.RECORD_SECONDS;
+  const start = performance.now();
+  let signStart = null, frame = null;
+  function step(now) {
+    let bar, brightness;
+    if (signStart === null) {
+      const t = Math.min((now - start) / 1000, countdown);
+      bar = 50 * (t / countdown);
+      brightness = t < DIM_SECONDS
+        ? 1 - (1 - DIMMEST) * (t / DIM_SECONDS)
+        : DIMMEST + (1 - DIMMEST) * ((t - DIM_SECONDS) / (countdown - DIM_SECONDS));
+    } else {
+      bar = 50 + 50 * Math.min(1, (now - signStart) / 1000 / record);
+      brightness = 1;
+    }
+    fill.style.width = `${bar}%`;
+    video.style.filter = brightness < 0.999 ? `brightness(${brightness.toFixed(3)})` : "";
+    frame = requestAnimationFrame(step);
+  }
+  fill.style.width = "0%";
+  frame = requestAnimationFrame(step);
+  return {
+    startSigning() { signStart = performance.now(); },
+    stop() {
+      cancelAnimationFrame(frame);
+      video.style.filter = "";
+      fill.style.width = "0%";
+    },
+  };
 }
 
 async function startAttempt() {
@@ -187,23 +222,21 @@ async function startAttempt() {
   $("countdown").hidden = false;
   $("countdown").classList.remove("signing");
   $("phase-bar").hidden = false;
-  setPhase(0);
+  const animation = animateAttempt();
   try {
-    // Get ready: 3, 2, 1 (camera dimmed)
-    $("camera-box").classList.add("counting");
+    // Get ready: 3, 2, 1
     $("count-label").textContent = "Get ready…";
-    requestAnimationFrame(() => setPhase(33, settings.COUNTDOWN_SECONDS));
     for (let i = settings.COUNTDOWN_SECONDS; i > 0; i--) {
       $("count-number").textContent = i;
       await wait(1000);
     }
     // Sign
     $("countdown").classList.add("signing");
-    $("camera-box").classList.remove("counting");
     $("count-label").textContent = "SIGN NOW!";
     $("camera-box").classList.add("recording");
-    setPhase(100, settings.RECORD_SECONDS);
+    animation.startSigning();
     const rawFrames = await captureFrames(tracker, settings.RECORD_SECONDS);
+    animation.stop();
     $("camera-box").classList.remove("recording");
     $("countdown").hidden = true;
     $("phase-bar").hidden = true;
@@ -218,7 +251,8 @@ async function startAttempt() {
     $("save").disabled = false;
   } catch (err) {
     console.error(err);
-    $("camera-box").classList.remove("recording", "counting");
+    animation.stop();
+    $("camera-box").classList.remove("recording");
     $("countdown").hidden = true;
     $("phase-bar").hidden = true;
     showResult({ kind: "rejected", problem: `Something went wrong (${err.message}). Please try again.` });
