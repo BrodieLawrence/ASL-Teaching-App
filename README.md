@@ -79,6 +79,7 @@ tools/
   download_dataset.py   downloads example recordings from Kaggle
   build_signs.js        turns them into signs/*.json
   evaluate.js           accuracy test (table above)
+  evaluate_attempts.js  re-grades attempts saved from the page (see Testing with real attempts)
   pipeline.js           shared helpers; uses the same code as the page
 ```
 
@@ -88,6 +89,18 @@ tools/
 2. `python3 tools/download_dataset.py` (needs `pip install pyarrow` and Kaggle access, see the script)
 3. `node tools/build_signs.js`
 4. `node tools/evaluate.js` to check accuracy
+
+## Testing with real attempts
+
+Open the page with `?debug` at the end of the address (e.g.
+`http://localhost:8000/?debug`). After each attempt, tick **I signed it wrong on
+purpose** if that's the case, then click **Save last attempt**. This downloads
+the tracked points of the attempt (numbers only, no video). Re-grade a folder
+of saved attempts with:
+
+```
+node tools/evaluate_attempts.js path/to/attempts
+```
 
 ## Data
 
