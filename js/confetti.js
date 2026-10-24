@@ -1,5 +1,5 @@
 // A short confetti fountain: pieces shoot up from the bottom middle of an element,
-// spread out, tumble and fall. Used when the learner signs a word correctly.
+// spread out over the whole screen, tumble and fall. Used when the learner signs a word correctly.
 // Colours come from the palette in style.css. Skipped for people who prefer less motion.
 
 const DURATION_MS = 2400;   // whole effect
@@ -7,14 +7,17 @@ const EMIT_MS = 700;        // how long new pieces keep shooting out
 const PIECES = 140;
 const GRAVITY = 1400;       // pixels per second per second
 
-export function confettiFountain(container) {
+export function confettiFountain(source) {
   if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
+  // The canvas covers the whole window; the fountain starts at the bottom middle of `source`.
   const canvas = document.createElement("canvas");
   canvas.className = "confetti";
   canvas.setAttribute("aria-hidden", "true");
-  container.append(canvas);
-  const { width, height } = container.getBoundingClientRect();
+  document.body.append(canvas);
+  const width = window.innerWidth, height = window.innerHeight;
+  const box = source.getBoundingClientRect();
+  const originX = box.left + box.width / 2, originY = box.bottom;
   const scale = window.devicePixelRatio || 1;
   canvas.width = width * scale;
   canvas.height = height * scale;
@@ -28,11 +31,11 @@ export function confettiFountain(container) {
   // Each piece gets a launch time, so they stream out like a fountain rather than all at once.
   const pieces = Array.from({ length: PIECES }, (_, i) => {
     const angle = -Math.PI / 2 + (Math.random() - 0.5) * 1.4;   // upwards, spreading up to ±40°
-    const speed = height * (1.8 + Math.random() * 1.0);
+    const speed = box.height * (1.8 + Math.random() * 1.0);
     return {
       launch: (i / PIECES) * EMIT_MS,
-      x: width / 2 + (Math.random() - 0.5) * 30,
-      y: height,
+      x: originX + (Math.random() - 0.5) * 30,
+      y: originY,
       vx: Math.cos(angle) * speed,
       vy: Math.sin(angle) * speed,
       spin: (Math.random() - 0.5) * 14,
