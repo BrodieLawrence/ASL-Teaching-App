@@ -181,7 +181,7 @@ function showIdle() {
 // Returns { startSigning(), stop() }: call startSigning at "SIGN NOW!" so the bar's second
 // half starts then (even on a slow computer where the countdown runs late).
 const DIM_SECONDS = 0.3;   // how quickly the camera dims after pressing Start
-const DIMMEST = 0.4;       // brightness at its darkest
+const DIMMEST = 0.25;      // brightness at its darkest
 function animateAttempt() {
   const fill = $("phase-fill"), video = $("video");
   const countdown = settings.COUNTDOWN_SECONDS, record = settings.RECORD_SECONDS;

@@ -27,8 +27,8 @@ export function confettiFountain(container) {
 
   // Each piece gets a launch time, so they stream out like a fountain rather than all at once.
   const pieces = Array.from({ length: PIECES }, (_, i) => {
-    const angle = -Math.PI / 2 + (Math.random() - 0.5) * 0.9;   // mostly upwards, ±25°
-    const speed = height * (1.6 + Math.random() * 0.9);
+    const angle = -Math.PI / 2 + (Math.random() - 0.5) * 1.4;   // upwards, spreading up to ±40°
+    const speed = height * (1.8 + Math.random() * 1.0);
     return {
       launch: (i / PIECES) * EMIT_MS,
       x: width / 2 + (Math.random() - 0.5) * 30,
