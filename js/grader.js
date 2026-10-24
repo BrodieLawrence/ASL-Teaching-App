@@ -69,7 +69,8 @@ function frameDistance(a, b) {
   return Math.hypot(a.x - b.x, a.y - b.y) + SHAPE_WEIGHT * (shapeDiff / 21);
 }
 
-function dtwDistance(a, b) {
+// Distance between two signs (already passed through toFeatures). 0 = identical.
+export function dtwDistance(a, b) {
   const n = b.length;
   let prev = new Float64Array(n + 1).fill(Infinity);
   let cur = new Float64Array(n + 1);

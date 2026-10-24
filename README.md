@@ -34,6 +34,12 @@ Then open http://localhost:8000 in Chrome and allow camera access.
    your attempt is close enough to its examples. The *leniency* setting
    controls how forgiving both rules are.
 
+## Showing the sign
+
+Each word shows a looping stick-figure animation of its most typical example
+recording (the one closest on average to all the others). It is drawn facing
+the learner and shows only the main signing hand.
+
 ## Accuracy
 
 Tested on recordings from 3 signers whose recordings are not in the examples
@@ -59,6 +65,7 @@ js/
   recorder.js           countdown, recording, conversion to body coordinates
   grader.js             compares an attempt with the examples
   signs.js              loads the example files
+  demo.js               stick-figure animation showing how to do each sign
   app.js                connects the page together
 signs/
   words.json            list of words and the grading distance limit
