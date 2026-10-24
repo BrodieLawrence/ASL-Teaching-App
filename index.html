@@ -11,8 +11,10 @@
   <p>Sign this word:</p>
   <div id="word">...</div>
 
-  <!-- Looping stick figure showing how to do the sign (see js/demo.js). -->
-  <p>How to sign it (the figure faces you):</p>
+  <!-- How to do the sign: a video from videos/<word>.mp4 if there is one,
+       otherwise a stick figure drawn from the example data (see js/demo.js). -->
+  <p>How to sign it:</p>
+  <video id="demo-video" muted loop playsinline hidden></video>
   <canvas id="demo" width="320" height="260"></canvas>
 
   <p>

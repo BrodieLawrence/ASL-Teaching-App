@@ -8,6 +8,9 @@ export const DEFAULT_LENIENCY = 1.25;
 // Grading always compares against every word, so this only changes what is asked.
 export const PRACTICE_WORDS = ["thankyou", "sleep", "no"];
 
+// Demonstration videos: videos/<word>.mp4. Words without a video show a stick figure.
+export const VIDEO_FOLDER = "videos/";
+
 export const COUNTDOWN_SECONDS = 3;
 export const RECORD_SECONDS = 3;
 
