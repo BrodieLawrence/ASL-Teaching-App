@@ -4,7 +4,7 @@ import { startTracking } from "./tracking.js";
 import { recordAttempt, toBodyCoordinates } from "./recorder.js";
 import { mainHandSequence, checkAttempt, rankWords, judge } from "./grader.js";
 import { loadSigns } from "./signs.js";
-import { playSignDemo } from "./demo.js";
+import { showSignDemo } from "./demo.js";
 
 const $ = id => document.getElementById(id);
 let data = null;
@@ -37,7 +37,10 @@ function nextWord() {
   $("word").textContent = currentWord;
   $("details").textContent = "";
   stopDemo();
-  stopDemo = playSignDemo($("demo"), data.signs.find(s => s.word === currentWord).demo);
+  stopDemo = showSignDemo(
+    { video: $("demo-video"), canvas: $("demo") },
+    `${settings.VIDEO_FOLDER}${currentWord}.mp4`,
+    data.signs.find(s => s.word === currentWord).demo);
   showStatus("Press Start when ready.");
 }
 

@@ -1,5 +1,6 @@
-// Plays a looping stick-figure animation of how to sign a word, using one
-// of the word's example recordings (the most typical one, see build_signs.js).
+// Shows how to do a sign: a demonstration video if the word has one,
+// otherwise a looping stick-figure animation of one of the word's example
+// recordings (the most typical one, see build_signs.js).
 //
 // The figure faces you, like a teacher would: their right hand appears on your left.
 // Only the main signing hand is recorded in the examples, so only that hand is drawn.
@@ -75,4 +76,40 @@ export function playSignDemo(canvas, sequence) {
   }
   requestAnimationFrame(frame);
   return () => { running = false; };
+}
+
+// Shows the word's video if it exists, otherwise the stick figure.
+// Returns a function that stops whatever is playing.
+export function showSignDemo({ video, canvas }, videoUrl, sequence) {
+  let stopped = false, stopFigure = null;
+
+  function useStickFigure() {
+    if (stopped || stopFigure) return;
+    video.pause();
+    video.hidden = true;
+    canvas.hidden = false;
+    stopFigure = playSignDemo(canvas, sequence);
+  }
+
+  function useVideo() {
+    if (stopped) return;
+    canvas.hidden = true;
+    video.hidden = false;
+    video.onerror = useStickFigure;  // e.g. a format this browser can't play
+    video.src = videoUrl;
+    video.play().catch(() => {});   // muted videos are allowed to autoplay
+  }
+
+  // Check whether this word has a video before choosing what to show.
+  video.hidden = canvas.hidden = true;
+  fetch(videoUrl, { method: "HEAD" })
+    .then(response => (response.ok ? useVideo() : useStickFigure()))
+    .catch(useStickFigure);
+
+  return () => {
+    stopped = true;
+    video.onerror = null;
+    video.pause();
+    if (stopFigure) stopFigure();
+  };
 }

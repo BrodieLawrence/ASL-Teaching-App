@@ -36,9 +36,12 @@ Then open http://localhost:8000 in Chrome and allow camera access.
 
 ## Showing the sign
 
-Each word shows a looping stick-figure animation of its most typical example
-recording (the one closest on average to all the others). It is drawn facing
-the learner and shows only the main signing hand.
+If `videos/<word>.mp4` exists, the page plays it on a loop. Add one with
+`tools/add_video.sh my-video.mov sleep` (converts any phone video; needs ffmpeg).
+
+Words without a video show a looping stick-figure animation of their most
+typical example recording (the one closest on average to all the others),
+drawn facing the learner, showing only the main signing hand.
 
 ## Accuracy
 
@@ -71,11 +74,14 @@ js/
   signs.js              loads the example files
   demo.js               stick-figure animation showing how to do each sign
   app.js                connects the page together
+videos/
+  <word>.mp4            demonstration video for one word (optional)
 signs/
   words.json            list of words and the grading distance limit
   <word>.json           example recordings for one word
 tools/
   word_list.txt         which words to build
+  add_video.sh          converts a video into videos/<word>.mp4
   download_dataset.py   downloads example recordings from Kaggle
   build_signs.js        turns them into signs/*.json
   evaluate.js           accuracy test (table above)
