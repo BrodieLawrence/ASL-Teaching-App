@@ -1,0 +1,15 @@
+{
+  "words": [
+    "hello",
+    "thankyou",
+    "yes",
+    "no",
+    "dog",
+    "cat",
+    "elephant",
+    "airplane",
+    "drink",
+    "sleep"
+  ],
+  "distanceLimit": 0.779
+}

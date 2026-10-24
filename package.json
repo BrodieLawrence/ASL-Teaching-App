@@ -1,0 +1,11 @@
+{
+  "name": "asl-sign-check",
+  "private": true,
+  "type": "module",
+  "description": "Webcam ASL practice: sign a word, get told if you did it right.",
+  "scripts": {
+    "build-signs": "node tools/build_signs.js",
+    "evaluate": "node tools/evaluate.js",
+    "serve": "python3 -m http.server 8000"
+  }
+}
