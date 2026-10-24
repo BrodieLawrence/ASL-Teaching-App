@@ -5,13 +5,21 @@ import { DEFAULT_LISTS } from "./settings.js";
 
 const KEY = "aslmasters-lists";
 
+// Saved lists are checked field by field; anything unexpected is dropped.
+const MAX_LISTS = 100, MAX_NAME = 40;
 function loadOwn() {
+  let saved = [];
   try {
-    const lists = JSON.parse(localStorage.getItem(KEY) || "[]");
-    return Array.isArray(lists) ? lists.filter(l => l && l.id && Array.isArray(l.words)) : [];
-  } catch {
-    return [];
-  }
+    saved = JSON.parse(localStorage.getItem(KEY) || "[]");
+  } catch { /* unreadable: start fresh */ }
+  if (!Array.isArray(saved)) return [];
+  return saved.filter(l => l && typeof l.id === "string" && typeof l.name === "string" && Array.isArray(l.words))
+    .slice(0, MAX_LISTS)
+    .map(l => ({
+      id: l.id.slice(0, 40),
+      name: l.name.slice(0, MAX_NAME),
+      words: l.words.filter(w => typeof w === "string").slice(0, 100),
+    }));
 }
 
 function saveOwn(lists) {
@@ -40,7 +48,7 @@ export const quizLists = {
 
   // Creates a new list (no id) or updates one of the learner's lists. Returns its id.
   save({ id, name, words }) {
-    const clean = { name: name.trim() || "My list", words: [...new Set(words)] };
+    const clean = { name: name.trim().slice(0, MAX_NAME) || "My list", words: [...new Set(words)] };
     const existing = id && own.find(l => l.id === id);
     if (existing) {
       Object.assign(existing, clean);

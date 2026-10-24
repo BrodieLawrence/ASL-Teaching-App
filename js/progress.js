@@ -4,12 +4,19 @@
 
 const KEY = "aslmasters-progress";
 
+// Saved data is checked field by field, so anything unexpected is ignored instead of
+// breaking the page.
 function load() {
+  let saved = {};
   try {
-    return { streak: 0, learned: [], difficulty: null, ...JSON.parse(localStorage.getItem(KEY) || "{}") };
-  } catch {
-    return { streak: 0, learned: [], difficulty: null };
-  }
+    saved = JSON.parse(localStorage.getItem(KEY) || "{}") || {};
+  } catch { /* unreadable: start fresh */ }
+  const isWord = w => typeof w === "string" && w.length <= 40;
+  return {
+    streak: Number.isInteger(saved.streak) && saved.streak >= 0 ? saved.streak : 0,
+    learned: Array.isArray(saved.learned) ? saved.learned.filter(isWord).slice(0, 500) : [],
+    difficulty: typeof saved.difficulty === "string" ? saved.difficulty : null,
+  };
 }
 
 function save(state) {

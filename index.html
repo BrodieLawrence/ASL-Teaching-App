@@ -3,12 +3,14 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Security policy: the page may only load code, styles, fonts, media and data from this
+       site, and can't send data anywhere else. 'wasm-unsafe-eval' lets MediaPipe run its
+       WebAssembly hand-tracking code (hosted here, see vendor/mediapipe/README.md). -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; img-src 'self' data: blob:; media-src 'self' blob:; font-src 'self'; connect-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'none'; upgrade-insecure-requests">
+  <meta name="referrer" content="no-referrer">
   <title>ASL Masters</title>
   <meta name="description" content="Practice ASL vocabulary with your webcam: watch a sign, try it, get instant feedback.">
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@500;700;800&display=swap">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>

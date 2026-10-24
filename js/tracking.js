@@ -2,12 +2,13 @@
 // Produces one raw frame per video frame (see recorder.js for the format)
 // and draws the tracked points over the video.
 
-import { FilesetResolver, HandLandmarker, PoseLandmarker }
-  from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs";
+// MediaPipe is hosted with the site (see vendor/mediapipe/README.md), not loaded from a CDN.
+import { FilesetResolver, HandLandmarker, PoseLandmarker } from "../vendor/mediapipe/vision_bundle.mjs";
 
-const WASM_URL = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm";
-const HAND_MODEL = "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task";
-const POSE_MODEL = "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task";
+const VENDOR = new URL("../vendor/mediapipe/", import.meta.url).href;
+const WASM_URL = VENDOR + "wasm";
+const HAND_MODEL = VENDOR + "models/hand_landmarker.task";
+const POSE_MODEL = VENDOR + "models/pose_landmarker_lite.task";
 
 // MediaPipe pose point numbers
 const NOSE = 0, LEFT_SHOULDER = 11, RIGHT_SHOULDER = 12, LEFT_WRIST = 15, RIGHT_WRIST = 16;
