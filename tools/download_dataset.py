@@ -15,9 +15,14 @@ Each recording: {"word", "frames": [{"L", "R", "pose"}]} in camera coordinates,
 the same raw format the web page records (see js/recorder.js).
 
 Usage: python3 tools/download_dataset.py     (needs: pip install pyarrow)
-       add --cached-only to skip files that aren't downloaded yet (e.g. when Kaggle rate-limits)
+Options:
+  --cached-only      skip files that aren't downloaded yet (e.g. when Kaggle rate-limits)
+  --words FILE       word list to use instead of word_list.txt
+  --examples N       examples per word (default 40)
+  --holdout N        test recordings per word (default 20)
+  --out NAME         save as NAME-examples.json / NAME-holdout.json instead
 """
-import collections, csv, io, json, os, random, sys, time, urllib.error, urllib.request, zipfile
+import argparse, collections, csv, io, json, os, random, sys, time, urllib.error, urllib.request, zipfile
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
@@ -99,7 +104,14 @@ def read_recording(path: Path) -> list:
 
 
 def main():
-    words = [w.strip() for w in open(TOOLS / "word_list.txt") if w.strip() and not w.startswith("#")]
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--cached-only", action="store_true")
+    parser.add_argument("--words", default=str(TOOLS / "word_list.txt"))
+    parser.add_argument("--examples", type=int, default=EXAMPLES_PER_WORD)
+    parser.add_argument("--holdout", type=int, default=HOLDOUT_PER_WORD)
+    parser.add_argument("--out", default="")
+    args = parser.parse_args()
+    words = [w.strip() for w in open(args.words) if w.strip() and not w.startswith("#")]
     index_path = CACHE / "train.csv"
     if not index_path.exists():
         CACHE.mkdir(exist_ok=True)
@@ -123,16 +135,16 @@ def main():
         for recs in by_signer.values():
             random.shuffle(recs)
         chosen = []  # take one per signer in turn, so examples cover many people
-        while len(chosen) < EXAMPLES_PER_WORD and any(by_signer.values()):
+        while len(chosen) < args.examples and any(by_signer.values()):
             for signer in sorted(by_signer):
-                if by_signer[signer] and len(chosen) < EXAMPLES_PER_WORD:
+                if by_signer[signer] and len(chosen) < args.examples:
                     chosen.append(by_signer[signer].pop())
         holdout = [r for r in word_rows if r["participant_id"] in holdout_signers]
         random.shuffle(holdout)
         picks["examples"] += chosen
-        picks["holdout"] += holdout[:HOLDOUT_PER_WORD]
+        picks["holdout"] += holdout[:args.holdout]
 
-    if "--cached-only" in sys.argv:
+    if args.cached_only:
         is_cached = lambda r: (CACHE / "files" / r["path"].replace("/", "_")).exists()
         for name in picks:
             before = len(picks[name])
@@ -151,9 +163,10 @@ def main():
         for i, r in enumerate(chosen, 1):
             if i % 50 == 0 or i == len(chosen):
                 print(f"{name}: {i}/{len(chosen)}", flush=True)
-            out.append({"word": r["sign"], "frames": read_recording(cached(r["path"]))})
+            out.append({"word": r["sign"], "signer": r["participant_id"], "frames": read_recording(cached(r["path"]))})
 
-        (CACHE / f"{name}.json").write_text(json.dumps(out, separators=(",", ":")))
+        file_name = f"{args.out}-{name}.json" if args.out else f"{name}.json"
+        (CACHE / file_name).write_text(json.dumps(out, separators=(",", ":")))
 
 
 if __name__ == "__main__":

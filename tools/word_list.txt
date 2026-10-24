@@ -1,12 +1,24 @@
 # Words to include. Must be words from the Kaggle "asl-signs" dataset (250 available).
-# After editing, run:  python3 tools/download_dataset.py  then  node tools/build_signs.js
+# Chosen with tools/choose_words.js (the 20 the grader tells apart best, keeping
+# hello, please, mom and sleep). After editing, run:
+#   python3 tools/download_dataset.py   then   node tools/build_signs.js
 hello
-thankyou
+please
+mom
+dad
 yes
-no
-dog
-cat
-elephant
-airplane
-drink
 sleep
+water
+hungry
+hot
+happy
+cow
+bird
+horse
+tree
+airplane
+car
+girl
+hat
+moon
+bath

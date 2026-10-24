@@ -18,6 +18,10 @@
       <span class="logo-text"><span class="logo-asl">ASL</span> MASTERS</span>
     </div>
     <div class="stats">
+      <button id="music-toggle" class="stat-chip music-toggle" aria-pressed="true" title="Background music">
+        <svg class="icon"><use id="music-icon" href="assets/icons.svg#music-notes"></use></svg>
+        <span id="music-label">Music on</span>
+      </button>
       <div class="stat-chip" title="Correct signs in a row">
         <svg class="icon icon-star"><use href="assets/icons.svg#star"></use></svg>
         Streak <span id="streak">0</span>
@@ -61,8 +65,76 @@
       </div>
     </section>
 
+    <!-- Quiz lists: pick a list to practise, or make your own. -->
+    <section id="lists" class="lists" hidden>
+      <div class="screen-head">
+        <div>
+          <h1 class="screen-title">Choose a quiz list</h1>
+          <p class="screen-lede">Pick a list to practice, or make your own from any of the <span id="word-total">20</span> words.</p>
+        </div>
+        <button id="new-list" class="btn btn-primary btn-big"><svg class="icon"><use href="assets/icons.svg#plus"></use></svg>NEW LIST</button>
+      </div>
+      <p class="eyebrow">Default lists</p>
+      <div id="default-lists" class="list-grid"></div>
+      <p class="eyebrow">My lists</p>
+      <div id="my-lists" class="list-grid">
+        <button id="new-list-card" class="new-list-card">
+          <span class="new-list-plus"><svg class="icon"><use href="assets/icons.svg#plus"></use></svg></span>
+          <span class="new-list-title">Make a new list</span>
+          <span class="muted strong">Pick any of the words</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- Make or edit a quiz list. -->
+    <section id="editor" class="editor" hidden>
+      <div><button id="editor-back" class="btn btn-quiet"><svg class="icon"><use href="assets/icons.svg#arrow-left"></use></svg>Back to lists</button></div>
+      <h1 id="editor-title" class="screen-title">New quiz list</h1>
+      <div class="panel editor-panel">
+        <div class="field">
+          <label for="list-name" class="eyebrow">List name</label>
+          <input id="list-name" class="text-input" maxlength="40" autocomplete="off">
+        </div>
+        <div class="editor-words-head">
+          <div><span class="eyebrow">Choose words</span> <span id="editor-count" class="editor-count"></span></div>
+          <div class="panel-actions">
+            <button id="select-all" class="btn btn-quiet"><svg class="icon"><use href="assets/icons.svg#list-checks"></use></svg>Select all</button>
+            <button id="clear-words" class="btn btn-quiet">Clear</button>
+          </div>
+        </div>
+        <div id="word-toggles" class="word-toggles"></div>
+      </div>
+      <div class="editor-actions">
+        <div class="panel-actions">
+          <button id="save-list" class="btn btn-primary btn-big"><svg class="icon"><use href="assets/icons.svg#check"></use></svg>SAVE LIST</button>
+          <button id="cancel-edit" class="btn btn-quiet">Cancel</button>
+        </div>
+        <button id="delete-list" class="btn btn-quiet"><svg class="icon"><use href="assets/icons.svg#trash"></use></svg>Delete list</button>
+      </div>
+      <p id="editor-error" class="error-box" hidden></p>
+    </section>
+
+    <!-- Shown when every word in the list has been signed correctly. -->
+    <section id="done" class="done" hidden>
+      <div class="done-card">
+        <svg class="icon done-icon"><use href="assets/icons.svg#trophy"></use></svg>
+        <h1 class="done-title">Quiz complete!</h1>
+        <p id="done-list" class="muted strong"></p>
+        <p id="done-summary" class="done-summary"></p>
+        <div id="done-words" class="done-words"></div>
+        <div class="panel-actions done-actions">
+          <button id="play-again" class="btn btn-primary btn-big"><svg class="icon"><use href="assets/icons.svg#arrows-clockwise"></use></svg>PLAY AGAIN</button>
+          <button id="done-back" class="btn btn-quiet"><svg class="icon"><use href="assets/icons.svg#arrow-left"></use></svg>Back to lists</button>
+        </div>
+      </div>
+    </section>
+
     <!-- Practice: the main screen. -->
     <section id="practice" class="practice" hidden>
+      <div class="practice-top">
+        <button id="back-to-lists" class="btn btn-quiet"><svg class="icon"><use href="assets/icons.svg#arrow-left"></use></svg>Quiz lists</button>
+        <span class="muted strong">Playing: <span id="playing-list" class="playing-list"></span></span>
+      </div>
       <div class="word-row">
         <div class="word-card">
           <div class="word-card-top"><span class="tag">YOUR WORD</span><span id="word-position" class="muted strong"></span></div>

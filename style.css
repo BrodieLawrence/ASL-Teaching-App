@@ -310,3 +310,104 @@ main {
   padding: 12px 16px; border-radius: 14px; border: 3px dashed var(--secondary); font-weight: 700;
 }
 .debug-tools input[type="number"] { width: 70px; font: inherit; }
+
+/* ---------- Quiz lists ---------- */
+.lists, .editor, .done { display: flex; flex-direction: column; gap: 20px; }
+.screen-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px; }
+.screen-title { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: clamp(32px, 4vw, 44px); line-height: 1.05; }
+.screen-lede { margin: 6px 0 0; font-size: 18px; font-weight: 700; color: var(--muted); }
+.list-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); gap: 20px; }
+.list-card {
+  display: flex; flex-direction: column; gap: 12px; padding: 18px; min-width: 0;
+  border-radius: 22px; background: var(--surface); border: var(--border); box-shadow: 0 6px 0 var(--secondary);
+}
+.list-card-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.list-name { font-family: var(--font-display); font-weight: 600; font-size: 24px; overflow-wrap: anywhere; }
+.tag-default {
+  display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0;
+  padding: 3px 8px; border-radius: 8px; background: var(--primary); color: #FFFFFF;
+  font-weight: 800; font-size: 12px; letter-spacing: 1px;
+}
+.tag-default .icon { width: 14px; height: 14px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; min-height: 64px; align-content: flex-start; }
+.chip { padding: 4px 10px; border-radius: 999px; background: var(--page); border: 2px solid var(--secondary); font-weight: 700; font-size: 14px; }
+.list-card-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-top: auto; }
+.icon-buttons { display: flex; gap: 8px; }
+.btn-icon { padding: 8px 12px; }
+.new-list-card {
+  min-height: 250px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+  border-radius: 22px; border: 4px dashed var(--secondary); background: transparent; color: var(--primary);
+  transition: transform 0.12s, background-color 0.12s;
+}
+.new-list-plus {
+  width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  background: var(--surface); border: 3px solid var(--secondary); color: var(--accent);
+}
+.new-list-plus .icon { width: 34px; height: 34px; }
+.new-list-title { font-family: var(--font-display); font-weight: 600; font-size: 22px; }
+@media (hover: hover) {
+  .new-list-card:hover { transform: translateY(-2px); background: color-mix(in srgb, var(--page) 85%, var(--secondary)); }
+}
+
+/* ---------- List editor ---------- */
+.editor-panel { gap: 22px; padding: 24px; box-shadow: 0 7px 0 var(--secondary); }
+.field { display: flex; flex-direction: column; gap: 8px; max-width: 520px; }
+.text-input {
+  font: inherit; font-weight: 800; font-size: 22px; min-height: 52px; padding: 8px 16px;
+  border-radius: 14px; border: 3px solid var(--secondary); background: var(--page); color: var(--text);
+}
+.editor-words-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.editor-count { font-weight: 800; color: var(--accent); margin-left: 8px; }
+.word-toggles { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; }
+.word-toggle {
+  min-height: 56px; padding: 8px 14px; border-radius: 14px;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  font-weight: 800; font-size: 17px;
+  border: 3px solid var(--secondary); background: var(--surface); color: var(--text); box-shadow: 0 5px 0 var(--secondary);
+  transition: transform 0.12s, box-shadow 0.12s, background-color 0.12s;
+}
+.word-toggle .icon { display: none; }
+.word-toggle[aria-pressed="true"] { border-color: var(--accent); background: var(--accent); color: var(--on-accent); box-shadow: 0 5px 0 var(--accent-dark); }
+.word-toggle[aria-pressed="true"] .icon { display: block; }
+.word-toggle:active { transform: translateY(3px); box-shadow: 0 2px 0 var(--secondary); }
+@media (hover: hover) {
+  .word-toggle:hover:not(:active) { transform: translateY(-2px); background: color-mix(in srgb, var(--surface) 85%, var(--secondary)); box-shadow: 0 7px 0 var(--secondary); }
+  .word-toggle[aria-pressed="true"]:hover:not(:active) { background: color-mix(in srgb, var(--accent) 85%, black); box-shadow: 0 7px 0 var(--accent-dark); }
+}
+.editor-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px; }
+
+/* ---------- Quiz complete ---------- */
+.done-card {
+  align-self: center; width: 100%; max-width: 760px; margin-top: 24px;
+  display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 36px 32px; text-align: center;
+  border-radius: 28px; background: var(--surface); border: 4px solid var(--accent); box-shadow: 0 10px 0 var(--accent-dark);
+}
+.done-icon { width: 120px; height: 120px; color: var(--accent); }
+.done-title { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: clamp(38px, 5vw, 52px); line-height: 1; color: var(--accent); }
+.done-card p { margin: 0; }
+.done-summary { font-family: var(--font-display); font-weight: 600; font-size: 24px; }
+.done-words { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+.done-word {
+  display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 999px;
+  background: var(--accent); color: var(--on-accent); font-weight: 800; font-size: 17px;
+}
+.done-word .tries { font-weight: 700; opacity: 0.85; font-size: 14px; }
+.done-actions { justify-content: center; margin-top: 8px; }
+
+/* ---------- Practice: list bar ---------- */
+.practice-top { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; }
+.playing-list { color: var(--primary); }
+
+/* Words learned: smaller squares now that there are 20 words. */
+.learned-squares span { width: 10px; height: 10px; border-radius: 3px; }
+@media (max-width: 700px) { .learned-squares { display: none; } }
+
+/* ---------- Music button (top bar) ---------- */
+.music-toggle { font: inherit; font-weight: 800; cursor: pointer; transition: transform 0.12s, background-color 0.12s; }
+.music-toggle .icon { color: var(--accent); }
+.music-toggle[aria-pressed="false"] { color: var(--muted); }
+.music-toggle[aria-pressed="false"] .icon { color: var(--muted); }
+@media (hover: hover) {
+  .music-toggle:hover { transform: translateY(-2px); background: color-mix(in srgb, var(--page) 85%, var(--secondary)); }
+}
+.music-toggle:active { transform: translateY(2px); }

@@ -68,6 +68,7 @@ export async function startTracking({ hands, pose }, video, canvas) {
   const listeners = new Set();
   const tracker = {
     recording: false,  // only changes the dot colour
+    paused: false,     // set while the practice screen isn't showing, to save work
     onFrame(fn) { listeners.add(fn); return () => listeners.delete(fn); },
   };
 
@@ -75,7 +76,7 @@ export async function startTracking({ hands, pose }, video, canvas) {
   function loop() {
     const now = performance.now();
     // Only analyse new video frames (the screen usually refreshes faster than the camera).
-    if (video.readyState >= 2 && video.currentTime !== lastVideoTime && now > lastTime) {
+    if (!tracker.paused && video.readyState >= 2 && video.currentTime !== lastVideoTime && now > lastTime) {
       lastVideoTime = video.currentTime;
       lastTime = now;
       const handResult = hands.detectForVideo(video, now);
