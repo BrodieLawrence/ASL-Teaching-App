@@ -1,4 +1,39 @@
-# ASL Masters
+# ASL Masters (Wacode 2026 team project)
+
+- **Team name:** [TEAM NAME]
+- **Team members:** [NAMES]
+- **Live demo:** https://aslmasters.com (served by GitHub Pages from the public
+  repository [BrodieLawrence/ASL-Teaching-App](https://github.com/BrodieLawrence/ASL-Teaching-App),
+  an identical copy of this code, because this repository is private)
+
+## Disclosures
+
+- **AI-generated work:** most of the code, tools and documentation were written with
+  Claude Code (Anthropic's AI coding assistant), directed and tested by the team. The
+  full commit history shows how the project was built.
+- **Outside code:** MediaPipe Tasks Vision 0.10.14 and its hand/pose models (Google,
+  Apache 2.0), hosted in `vendor/mediapipe`; Phosphor Icons (MIT, `assets/icons.svg`);
+  Fredoka and Nunito fonts (SIL Open Font License, `assets/fonts`).
+- **Outside data:** example sign recordings (hand and body tracking points, not video)
+  come from the Kaggle competition "Google - Isolated Sign Language Recognition"
+  (https://www.kaggle.com/competitions/asl-signs).
+- **Music:** [SOURCE AND LICENCE OF assets/music.mp3]
+- **Demonstration videos:** embedded from ASL University's "Signs" YouTube channel
+  (https://www.youtube.com/@aslu, Dr. Bill Vicars) using YouTube's standard embedded
+  player, which YouTube's terms allow; the videos are not copied into this repository.
+- **Simulated or placeholder parts:** words without a YouTube video yet show a
+  stick-figure animation drawn from the dataset. `videos/` holds earlier placeholder
+  recordings by a team member, used only when a word has no YouTube video.
+  Accuracy figures below come from dataset recordings of people the app has not seen,
+  not from live webcam use.
+
+## Security and data
+
+No secrets, keys or personal data are stored in this repository. The app has no
+server or accounts; camera video and tracking data never leave the user's browser
+(details under "Privacy and security" below).
+
+---
 
 A web app for ASL students to practice vocabulary alongside their classes. It
 shows a word and a video of the sign, you sign it to your webcam, and it tells
@@ -40,7 +75,11 @@ Then open http://localhost:8000 in Chrome and allow camera access.
 
 ## Showing the sign
 
-If `videos/<word>.mp4` exists, the page plays it on a loop. Add one with
+If a word has a YouTube video in `YOUTUBE_VIDEOS` (`js/settings.js`), it plays muted
+and looping in the Watch panel. Add one by putting the video's id (the part after
+`v=` in its link) next to the word; `{ id, start, end }` plays only part of it.
+
+Otherwise, if `videos/<word>.mp4` exists, the page plays it on a loop. Add one with
 `tools/add_video.sh my-video.mov sleep` (converts any phone video; needs ffmpeg).
 
 Words without a video show a looping stick-figure animation of their most
@@ -136,11 +175,13 @@ node tools/evaluate_attempts.js path/to/attempts
 - **Nothing leaves the device.** Camera video and the tracked hand points are only used
   in the browser's memory to grade the attempt. The page never uploads anything; the
   only network requests are for its own files.
-- **No third-party code or services at run time.** MediaPipe's tracking code and models
+- **No third-party code at run time.** MediaPipe's tracking code and models
   (`vendor/mediapipe`, with checksums in its README) and the fonts (`assets/fonts`) are
-  hosted with the site.
+  hosted with the site. The one outside service is YouTube's privacy-enhanced player
+  (youtube-nocookie.com) for demonstration videos, isolated in a frame; it never sees
+  the camera or tracking data.
 - **Content Security Policy** (in `index.html`): the page may only load from and connect
-  to its own site.
+  to its own site; frames are limited to YouTube's privacy-enhanced player.
 - **Saved data** (streak, words learned, settings, quiz lists) stays in the browser's
   local storage and is checked when read.
 

@@ -28,6 +28,13 @@ export const WORD_LABELS = {
   minemy: "mine / my", weus: "we / us", owie: "owie", shhh: "shhh",
 };
 
+// Demonstration videos from YouTube, shown first when a word has one: word -> video id
+// (the part after "v=" in the link), or { id, start, end } in seconds to play only part.
+// Current videos are from ASL University's "Signs" channel (youtube.com/@aslu).
+export const YOUTUBE_VIDEOS = {
+  sleep: "dXEqaWSEztY",
+};
+
 // Demonstration videos: videos/<word>.mp4. Words without a video show a stick figure.
 export const VIDEO_FOLDER = "videos/";
 
