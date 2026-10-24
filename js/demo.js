@@ -81,7 +81,7 @@ export function playSignDemo(canvas, sequence) {
 // Shows how to sign a word: its YouTube video if it has one, otherwise its own video file
 // if it exists, otherwise the stick figure. Returns { stop, replay }.
 export function showSignDemo({ youtube, video, canvas }, { youtubeVideo, videoUrl, sequence }) {
-  let stopped = false, stopFigure = null;
+  let stopped = false, stopFigure = null, player = null;
   youtube.hidden = video.hidden = canvas.hidden = true;
 
   function useStickFigure() {
@@ -101,8 +101,7 @@ export function showSignDemo({ youtube, video, canvas }, { youtubeVideo, videoUr
   }
 
   if (youtubeVideo) {
-    youtube.src = youtubeUrl(youtubeVideo);
-    youtube.hidden = false;
+    player = playYouTube(youtube, youtubeVideo);
   } else {
     // Check whether this word has a video file before choosing what to show.
     fetch(videoUrl, { method: "HEAD" })
@@ -116,13 +115,12 @@ export function showSignDemo({ youtube, video, canvas }, { youtubeVideo, videoUr
       video.onerror = null;
       video.pause();
       if (stopFigure) stopFigure();
-      youtube.removeAttribute("src");  // stops the YouTube player
-      youtube.hidden = true;
+      if (player) player.stop();
     },
     replay() {
       if (stopped) return;
-      if (youtubeVideo) {
-        youtube.src = youtubeUrl(youtubeVideo);  // reloading restarts it from the beginning
+      if (player) {
+        player.restart();
       } else if (stopFigure) {
         stopFigure();
         stopFigure = playSignDemo(canvas, sequence);
@@ -134,13 +132,105 @@ export function showSignDemo({ youtube, video, canvas }, { youtubeVideo, videoUr
   };
 }
 
+// ---------- YouTube ----------
+//
+// Browsers sometimes skip a YouTube video's autoplay (for example while the page is busy
+// starting the hand tracking), leaving it stuck on its thumbnail. So instead of just hoping
+// it starts, the page talks to the player with postMessage (YouTube's embed API, no extra
+// scripts needed): it asks the player to report its state, tells it to play until it says
+// it is playing, and reloads it as a last resort.
+
+const YOUTUBE_ORIGIN = "https://www.youtube-nocookie.com";
+const PLAYING = 1, BUFFERING = 3;
+const CHECK_EVERY_MS = 700;
+const RELOAD_AFTER_CHECKS = 6;   // about 4 seconds without playing
+const MAX_RELOADS = 2;
+
+// Starts a YouTube video in the given iframe and keeps nudging it until it plays.
+// Returns { stop, restart }.
+function playYouTube(placeholder, entry) {
+  const { start = 0 } = typeof entry === "string" ? {} : entry;
+  let frame = placeholder, state = -1, ready = false, checks = 0, reloads = 0, timer = null;
+
+  // A fresh iframe for each word, so switching words doesn't add entries to the browser's
+  // back-button history (changing an iframe's address does).
+  function load() {
+    const fresh = frame.cloneNode(false);
+    fresh.src = youtubeUrl(entry);
+    fresh.hidden = false;
+    fresh.addEventListener("load", () => { listen(); nudge(); });
+    frame.replaceWith(fresh);
+    frame = fresh;
+    state = -1; ready = false; checks = 0;
+  }
+
+  function send(message) {
+    frame.contentWindow?.postMessage(JSON.stringify({ ...message, id: 1, channel: "widget" }), YOUTUBE_ORIGIN);
+  }
+  const listen = () => send({ event: "listening" });
+  const command = (func, args = []) => send({ event: "command", func, args });
+  function nudge() {
+    command("mute");
+    command("playVideo");
+  }
+
+  function onMessage(event) {
+    if (event.origin !== YOUTUBE_ORIGIN || event.source !== frame.contentWindow) return;
+    let data;
+    try { data = JSON.parse(event.data); } catch { return; }
+    if (!data || typeof data !== "object") return;
+    ready = true;  // the player is answering, so it can take commands
+    if (data.event === "onReady") nudge();
+    const reported = data.event === "onStateChange" ? data.info : data.info?.playerState;
+    if (typeof reported === "number") state = reported;
+  }
+
+  function check() {
+    if (state === PLAYING || state === BUFFERING) { checks = 0; return; }
+    checks++;
+    if (checks >= RELOAD_AFTER_CHECKS && reloads < MAX_RELOADS) {
+      reloads++;
+      load();
+      return;
+    }
+    listen();
+    nudge();
+  }
+
+  window.addEventListener("message", onMessage);
+  load();
+  timer = setInterval(check, CHECK_EVERY_MS);
+
+  return {
+    stop() {
+      clearInterval(timer);
+      window.removeEventListener("message", onMessage);
+      frame.removeAttribute("src");  // stops the YouTube player
+      frame.hidden = true;
+    },
+    restart() {
+      reloads = 0;
+      if (ready) {
+        command("seekTo", [start, true]);
+        nudge();
+        checks = 0;
+      } else {
+        load();
+      }
+    },
+  };
+}
+
 // YouTube's privacy-enhanced player: autoplays muted, loops, no controls or suggestions.
+// enablejsapi lets the page tell it to play (see playYouTube).
 function youtubeUrl(entry) {
   const { id, start, end } = typeof entry === "string" ? { id: entry } : entry;
   const params = new URLSearchParams({
     autoplay: "1", mute: "1", loop: "1", playlist: id, controls: "0", rel: "0",
     playsinline: "1", modestbranding: "1", iv_load_policy: "3", disablekb: "1",
+    enablejsapi: "1",
   });
+  if (location.origin.startsWith("http")) params.set("origin", location.origin);
   if (start) params.set("start", String(start));
   if (end) params.set("end", String(end));
   return `https://www.youtube-nocookie.com/embed/${encodeURIComponent(id)}?${params}`;
