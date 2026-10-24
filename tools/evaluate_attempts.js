@@ -10,7 +10,7 @@ import * as settings from "../js/settings.js";
 
 const args = process.argv.slice(2);
 const flag = args.indexOf("--leniency");
-const leniency = flag >= 0 ? parseFloat(args.splice(flag, 2)[1]) : settings.DEFAULT_LENIENCY;
+const leniency = flag >= 0 ? parseFloat(args.splice(flag, 2)[1]) : settings.DIFFICULTIES[settings.DEFAULT_DIFFICULTY].leniency;
 const files = args.flatMap(p => statSync(p).isDirectory()
   ? readdirSync(p).filter(f => f.endsWith(".json")).map(f => join(p, f)) : [p]);
 if (!files.length) {

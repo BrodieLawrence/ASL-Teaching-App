@@ -1,7 +1,10 @@
-# ASL Sign Check
+# ASL Masters
 
-A web app for practicing American Sign Language. It shows a word, you sign it to
-your webcam, and it tells you whether you signed it correctly.
+A web app for ASL students to practice vocabulary alongside their classes. It
+shows a word and a video of the sign, you sign it to your webcam, and it tells
+you whether you got it right, or which sign it looked like instead.
+
+Live at https://aslmasters.com.
 
 Everything runs in the browser. The video never leaves your computer.
 
@@ -31,8 +34,9 @@ Then open http://localhost:8000 in Chrome and allow camera access.
    every word using dynamic time warping, which lines up two movements even if
    one is done faster. Both hand position and handshape count.
 5. **Grading.** You pass if the target word is among your closest matches **and**
-   your attempt is close enough to its examples. The *leniency* setting
-   controls how forgiving both rules are.
+   your attempt is close enough to its examples. The difficulty setting
+   (Easy / Normal / Hard) sets how forgiving both rules are ("leniency", see
+   `js/settings.js`).
 
 ## Showing the sign
 
@@ -46,33 +50,44 @@ drawn facing the learner, showing only the main signing hand.
 ## Accuracy
 
 Tested on recordings from 3 signers whose recordings are not in the examples
-(`node tools/evaluate.js`, 60 recordings, 10 words):
+(`node tools/evaluate.js`, 200 recordings, 10 words):
 
-| Leniency | Correct sign passes | A different sign passes |
+| Difficulty (leniency) | Correct sign passes | A different sign passes |
 |---|---|---|
-| 0.75 | 67% | 14% |
-| 1.0 | 77% | 19% |
-| **1.25 (default)** | **87%** | **30%** |
-| 2.0 | 92% | 42% |
+| Hard (0.7) | 59% | 9% |
+| **Normal (1.25, default)** | **85%** | **31%** |
+| Easy (2.0) | 88% | 42% |
 
-These numbers come from a small test (60 recordings), so treat them as roughly
-±10%. The grading distance limit was also set using these same recordings, so
-they are somewhat optimistic.
+These numbers come from a fairly small test (200 recordings from 3 people), so
+treat them as roughly ±5%. The grading distance limit was set using some of
+these same recordings, so they are somewhat optimistic.
 
 The default favors the learner: it is better to occasionally accept a sloppy
 sign than to frustrate someone who signed correctly.
 
+## Changing the look
+
+- **Colours:** the six colours at the top of `style.css` (`--page`, `--surface`,
+  `--primary`, `--secondary`, `--accent`, `--highlight`). Text colours are
+  worked out from them automatically.
+- **Fonts:** `--font-display` (headings, buttons) and `--font-body` in
+  `style.css`, loaded from Google Fonts in `index.html`.
+- **Icons:** [Phosphor](https://phosphoricons.com) duotone icons in
+  `assets/icons.svg` (MIT licence, `assets/LICENSE-phosphor.txt`).
+
 ## Project layout
 
 ```
-index.html, style.css   the page
+index.html, style.css   the page (welcome screen and practice screen)
+assets/                 icons, favicon
 js/
-  settings.js           all adjustable settings (leniency, practice words, timings)
+  settings.js           all adjustable settings (difficulty levels, practice words, timings)
   tracking.js           webcam + MediaPipe tracking
-  recorder.js           countdown, recording, conversion to body coordinates
+  recorder.js           recording, conversion to body coordinates
   grader.js             compares an attempt with the examples
   signs.js              loads the example files
-  demo.js               stick-figure animation showing how to do each sign
+  demo.js               demonstration video or stick-figure animation for each sign
+  progress.js           streak and words learned, saved in the browser
   app.js                connects the page together
 videos/
   <word>.mp4            demonstration video for one word (optional)
@@ -99,7 +114,8 @@ tools/
 ## Testing with real attempts
 
 Open the page with `?debug` at the end of the address (e.g.
-`http://localhost:8000/?debug`). After each attempt, tick **I signed it wrong on
+`http://localhost:8000/?debug`). The debug bar also has a leniency box that overrides the difficulty buttons.
+After each attempt, tick **I signed it wrong on
 purpose** if that's the case, then click **Save last attempt**. This downloads
 the tracked points of the attempt (numbers only, no video). Re-grade a folder
 of saved attempts with:

@@ -79,7 +79,7 @@ export function playSignDemo(canvas, sequence) {
 }
 
 // Shows the word's video if it exists, otherwise the stick figure.
-// Returns a function that stops whatever is playing.
+// Returns { stop, replay }.
 export function showSignDemo({ video, canvas }, videoUrl, sequence) {
   let stopped = false, stopFigure = null;
 
@@ -106,10 +106,22 @@ export function showSignDemo({ video, canvas }, videoUrl, sequence) {
     .then(response => (response.ok ? useVideo() : useStickFigure()))
     .catch(useStickFigure);
 
-  return () => {
-    stopped = true;
-    video.onerror = null;
-    video.pause();
-    if (stopFigure) stopFigure();
+  return {
+    stop() {
+      stopped = true;
+      video.onerror = null;
+      video.pause();
+      if (stopFigure) stopFigure();
+    },
+    replay() {
+      if (stopped) return;
+      if (stopFigure) {
+        stopFigure();
+        stopFigure = playSignDemo(canvas, sequence);
+      } else {
+        video.currentTime = 0;
+        video.play().catch(() => {});
+      }
+    },
   };
 }

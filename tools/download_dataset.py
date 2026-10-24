@@ -15,8 +15,10 @@ Each recording: {"word", "frames": [{"L", "R", "pose"}]} in camera coordinates,
 the same raw format the web page records (see js/recorder.js).
 
 Usage: python3 tools/download_dataset.py     (needs: pip install pyarrow)
+       add --cached-only to skip files that aren't downloaded yet (e.g. when Kaggle rate-limits)
 """
-import collections, csv, io, json, os, random, sys, urllib.error, urllib.request, zipfile
+import collections, csv, io, json, os, random, sys, time, urllib.error, urllib.request, zipfile
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import numpy as np
@@ -24,7 +26,7 @@ import pyarrow.parquet as pq
 
 EXAMPLES_PER_WORD = 40
 HOLDOUT_SIGNERS = 3
-HOLDOUT_PER_WORD = 6
+HOLDOUT_PER_WORD = 20
 RANDOM_SEED = 7
 
 TOOLS = Path(__file__).parent
@@ -62,7 +64,16 @@ def cached(file_name: str) -> Path:
     path = CACHE / "files" / file_name.replace("/", "_")
     if not path.exists():
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_bytes(download(file_name))
+        for attempt in range(20):
+            try:
+                data = download(file_name)
+                break
+            except urllib.error.HTTPError as err:
+                if err.code != 429 or attempt == 19:
+                    raise
+                # Kaggle asked us to slow down; wait as long as it says.
+                time.sleep(int(err.headers.get("Retry-After", 30)) + 1)
+        path.write_bytes(data)
     return path
 
 
@@ -120,6 +131,20 @@ def main():
         random.shuffle(holdout)
         picks["examples"] += chosen
         picks["holdout"] += holdout[:HOLDOUT_PER_WORD]
+
+    if "--cached-only" in sys.argv:
+        is_cached = lambda r: (CACHE / "files" / r["path"].replace("/", "_")).exists()
+        for name in picks:
+            before = len(picks[name])
+            picks[name] = [r for r in picks[name] if is_cached(r)]
+            print(f"{name}: using {len(picks[name])} of {before} (others not downloaded yet)")
+
+    # Download everything first, several files at a time.
+    needed = [r["path"] for chosen in picks.values() for r in chosen]
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        for i, _ in enumerate(pool.map(cached, needed), 1):
+            if i % 100 == 0 or i == len(needed):
+                print(f"downloaded {i}/{len(needed)}", flush=True)
 
     for name, chosen in picks.items():
         out = []
