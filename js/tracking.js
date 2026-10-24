@@ -127,7 +127,7 @@ function trackingColors(canvas) {
     const style = getComputedStyle(canvas);
     const get = (name, fallback) => style.getPropertyValue(name).trim() || fallback;
     colorCache.set(canvas, {
-      hand: get("--track-hand", "lime"), recording: get("--track-recording", "red"), body: get("--track-body", "cyan"),
+      hand: get("--track-hand", "lime"), recording: get("--track-recording", "red"),
     });
   }
   return colorCache.get(canvas);
@@ -141,7 +141,6 @@ function draw(canvas, handList, posePoints, recording) {
   ctx.fillStyle = recording ? colors.recording : colors.hand;
   for (const hand of handList || []) hand.forEach(p => dot(p, 5));
   if (posePoints) {
-    ctx.fillStyle = colors.body;
     [NOSE, LEFT_SHOULDER, RIGHT_SHOULDER].forEach(i => dot(posePoints[i], 9));
   }
 }

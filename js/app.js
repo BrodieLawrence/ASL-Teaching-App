@@ -6,6 +6,7 @@ import { mainHandSequence, checkAttempt, rankWords, judge } from "./grader.js";
 import { loadSigns } from "./signs.js";
 import { showSignDemo } from "./demo.js";
 import { progress } from "./progress.js";
+import { confettiFountain } from "./confetti.js";
 
 const $ = id => document.getElementById(id);
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -324,6 +325,7 @@ export function showResult(result) {
   $("result").hidden = false;
   $("turn-actions").hidden = true;
   $("result-actions").hidden = false;
+  if (passed) confettiFountain($("camera-box"));
 }
 
 // Debug only: download the last attempt's tracked points (numbers only, no video)
