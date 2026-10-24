@@ -69,14 +69,14 @@ def cached(file_name: str) -> Path:
     path = CACHE / "files" / file_name.replace("/", "_")
     if not path.exists():
         path.parent.mkdir(parents=True, exist_ok=True)
-        for attempt in range(20):
+        for attempt in range(1000):
             try:
                 data = download(file_name)
                 break
             except urllib.error.HTTPError as err:
-                if err.code != 429 or attempt == 19:
+                if err.code != 429 or attempt == 999:
                     raise
-                # Kaggle asked us to slow down; wait as long as it says.
+                # Kaggle asked us to slow down; wait as long as it says (it can take a while).
                 time.sleep(int(err.headers.get("Retry-After", 30)) + 1)
         path.write_bytes(data)
     return path
@@ -151,9 +151,19 @@ def main():
             picks[name] = [r for r in picks[name] if is_cached(r)]
             print(f"{name}: using {len(picks[name])} of {before} (others not downloaded yet)")
 
-    # Download everything first, several files at a time.
-    needed = [r["path"] for chosen in picks.values() for r in chosen]
-    with ThreadPoolExecutor(max_workers=2) as pool:
+    # Download everything first. Order: the 1st example of every word, then the 2nd of
+    # every word, and so on (then the test recordings the same way), so if downloading is
+    # interrupted every word has about the same number of examples.
+    def interleaved(chosen):
+        by_word = collections.defaultdict(list)
+        for r in chosen:
+            by_word[r["sign"]].append(r)
+        rounds = max((len(v) for v in by_word.values()), default=0)
+        return [v[i] for i in range(rounds) for v in by_word.values() if i < len(v)]
+    needed = [r["path"] for chosen in picks.values() for r in interleaved(chosen)]
+    needed = [p for p in needed if not (CACHE / "files" / p.replace("/", "_")).exists()]
+    print(f"{len(needed)} files to download", flush=True)
+    with ThreadPoolExecutor(max_workers=1) as pool:
         for i, _ in enumerate(pool.map(cached, needed), 1):
             if i % 100 == 0 or i == len(needed):
                 print(f"downloaded {i}/{len(needed)}", flush=True)
