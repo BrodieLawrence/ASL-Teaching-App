@@ -12,6 +12,8 @@ let tracker = null;
 let currentWord = null;
 let stopDemo = () => {};
 let practiceWords = [];
+let lastAttempt = null;  // kept so it can be saved for testing (see saveLastAttempt)
+const debugMode = new URLSearchParams(location.search).has("debug");
 
 function showStatus(text, kind = "") {
   $("status").textContent = text;
@@ -77,6 +79,9 @@ async function onStart() {
     });
     const leniency = readLeniency();
     const result = gradeAttempt(rawFrames, currentWord, leniency);
+    lastAttempt = { word: currentWord, leniency, pass: result.pass, message: result.message,
+      savedAt: new Date().toISOString(), frames: rawFrames };
+    $("save").disabled = false;
     showStatus(result.message, result.pass ? "pass" : "fail");
     $("details").textContent = result.details || "";
   } catch (err) {
@@ -88,6 +93,22 @@ async function onStart() {
   }
 }
 
+// Debug only: download the last attempt's tracked points (numbers only, no video)
+// so it can be re-graded with tools/evaluate_attempts.js.
+function saveLastAttempt() {
+  const wrongOnPurpose = $("wrong-on-purpose").checked;
+  const attempt = { ...lastAttempt, wrongOnPurpose };
+  const blob = new Blob([JSON.stringify(attempt)], { type: "application/json" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  const label = wrongOnPurpose ? "wrong" : "correct";
+  link.download = `attempt-${attempt.word}-${label}-${attempt.savedAt.replace(/[:.]/g, "-")}.json`;
+  link.click();
+  URL.revokeObjectURL(link.href);
+  $("save").disabled = true;  // one save per attempt
+  showStatus(`Saved (${label}).`);
+}
+
 async function main() {
   $("leniency").value = settings.DEFAULT_LENIENCY;
   showStatus("Loading signs and hand tracking...");
@@ -96,6 +117,8 @@ async function main() {
   tracker = await startTracking($("video"), $("overlay"));
   $("next").onclick = nextWord;
   $("start").onclick = onStart;
+  $("save").onclick = saveLastAttempt;
+  $("debug-tools").hidden = !debugMode;
   $("start").disabled = false;
   nextWord();
   showStatus("Ready. Press Start.");
