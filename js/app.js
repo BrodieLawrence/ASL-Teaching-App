@@ -1,4 +1,4 @@
-// Wires the page together: welcome screen, practice screen, recording and results.
+// Wires the page together: welcome, quiz lists, list editor, practice and quiz-complete screens.
 import * as settings from "./settings.js";
 import { loadTrackingModels, startTracking, CameraError } from "./tracking.js";
 import { captureFrames, toBodyCoordinates } from "./recorder.js";
@@ -6,6 +6,10 @@ import { mainHandSequence, checkAttempt, rankWords, judge } from "./grader.js";
 import { loadSigns } from "./signs.js";
 import { showSignDemo } from "./demo.js";
 import { progress } from "./progress.js";
+import { confettiFountain } from "./confetti.js";
+import { quizLists } from "./lists.js";
+import { Quiz } from "./quiz.js";
+import { music } from "./music.js";
 
 const $ = id => document.getElementById(id);
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -14,10 +18,9 @@ const debugMode = new URLSearchParams(location.search).has("debug");
 let data = null;           // example signs (see signs.js)
 let models = null;         // tracking models, loaded during the welcome screen
 let tracker = null;
-let practiceWords = [];
-let deck = [];             // practice words in a shuffled order; we go through all before repeating
-let deckIndex = -1;
+let quiz = null;           // the quiz list being played (see quiz.js)
 let currentWord = null;
+let editing = null;        // list being edited: { id, words: Set } (id null for a new list)
 let demo = { stop() {}, replay() {} };
 let difficulty = settings.DIFFICULTIES[progress.difficulty] ? progress.difficulty : settings.DEFAULT_DIFFICULTY;
 let lastAttempt = null;    // kept so it can be saved for testing (see saveLastAttempt)
@@ -41,7 +44,6 @@ function showWelcomeError(message) {
 async function load() {
   setLoading("Loading signs…", 10);
   data = await loadSigns();
-  practiceWords = choosePracticeWords();
   renderProgress();
   setLoading("Loading hand tracking…", 35);
   models = await loadTrackingModels();
@@ -50,6 +52,7 @@ async function load() {
 }
 
 async function begin() {
+  music.start();  // the click on START PRACTICING lets the browser play sound
   $("begin").disabled = true;
   $("welcome-error").hidden = true;
   setLoading("Starting your camera…", 100);
@@ -63,42 +66,165 @@ async function begin() {
     return;
   }
   watchForHands();
-  $("welcome").hidden = true;
-  $("practice").hidden = false;
+  showLists();
+}
+
+// ---------- Screens ----------
+
+const SCREENS = ["welcome", "lists", "editor", "practice", "done"];
+function showScreen(name) {
+  for (const id of SCREENS) $(id).hidden = id !== name;
+  if (name !== "practice") demo.stop();
+  if (tracker) tracker.paused = name !== "practice";  // no tracking work while not practising
+  window.scrollTo(0, 0);
+}
+
+function icon(name) {
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("class", "icon");
+  const use = document.createElementNS("http://www.w3.org/2000/svg", "use");
+  use.setAttribute("href", `assets/icons.svg#${name}`);
+  svg.append(use);
+  return svg;
+}
+
+function button(className, text, iconName, onClick, ariaLabel) {
+  const b = document.createElement("button");
+  b.className = className;
+  if (iconName) b.append(icon(iconName));
+  if (text) b.append(text);
+  if (ariaLabel) { b.setAttribute("aria-label", ariaLabel); b.title = ariaLabel; }
+  b.onclick = onClick;
+  return b;
+}
+
+// ---------- Quiz lists ----------
+
+function listCard(list) {
+  const card = document.createElement("div");
+  card.className = "list-card";
+
+  const head = document.createElement("div");
+  head.className = "list-card-head";
+  const name = document.createElement("div");
+  name.className = "list-name";
+  name.textContent = list.name;
+  head.append(name);
+  if (list.builtIn) {
+    const tag = document.createElement("span");
+    tag.className = "tag-default";
+    tag.append(icon("lock-simple"), "DEFAULT");
+    head.append(tag);
+  }
+
+  const count = document.createElement("div");
+  count.className = "muted strong";
+  count.textContent = `${list.words.length} word${list.words.length === 1 ? "" : "s"}`;
+
+  const chips = document.createElement("div");
+  chips.className = "chips";
+  for (const word of list.words.slice(0, 6)) {
+    const chip = document.createElement("span");
+    chip.className = "chip";
+    chip.textContent = label(word);
+    chips.append(chip);
+  }
+  if (list.words.length > 6) {
+    const more = document.createElement("span");
+    more.className = "muted strong";
+    more.textContent = `+${list.words.length - 6} more`;
+    chips.append(more);
+  }
+
+  const actions = document.createElement("div");
+  actions.className = "list-card-actions";
+  const tools = document.createElement("div");
+  tools.className = "icon-buttons";
+  if (list.builtIn) {
+    tools.append(button("btn btn-quiet btn-icon", "", "copy", () => openEditor(list, true), "Copy and edit this list"));
+  } else {
+    tools.append(
+      button("btn btn-quiet btn-icon", "", "pencil-simple", () => openEditor(list, false), "Edit list"),
+      button("btn btn-quiet btn-icon", "", "trash", () => deleteList(list), "Delete list"));
+  }
+  actions.append(button("btn btn-primary", "PLAY", "play", () => startQuiz(list)), tools);
+
+  card.append(head, count, chips, actions);
+  return card;
+}
+
+function showLists() {
+  const lists = quizLists.all(data.words);
+  $("word-total").textContent = data.words.length;
+  $("default-lists").replaceChildren(...lists.filter(l => l.builtIn).map(listCard));
+  const newCard = $("new-list-card");
+  $("my-lists").replaceChildren(...lists.filter(l => !l.builtIn).map(listCard), newCard);
+  showScreen("lists");
+}
+
+function deleteList(list) {
+  if (!confirm(`Delete the list "${list.name}"? This can't be undone.`)) return;
+  quizLists.remove(list.id);
+  showLists();
+}
+
+// ---------- List editor ----------
+
+// list: an existing list to edit (or copy, if `copy`), or nothing for a new list.
+function openEditor(list = null, copy = false) {
+  const isEdit = list && !copy && !list.builtIn;
+  editing = { id: isEdit ? list.id : null, words: new Set(list ? list.words : []) };
+  $("editor-title").textContent = isEdit ? "Edit quiz list" : "New quiz list";
+  $("list-name").value = list ? (copy ? `${list.name} (copy)` : list.name) : "";
+  $("list-name").placeholder = "e.g. Week 4 vocab";
+  $("delete-list").hidden = !isEdit;
+  $("editor-error").hidden = true;
+  $("word-toggles").replaceChildren(...data.words.map(word => {
+    const b = button("word-toggle", label(word), "check", () => {
+      if (editing.words.has(word)) editing.words.delete(word); else editing.words.add(word);
+      renderEditor();
+    });
+    b.dataset.word = word;
+    return b;
+  }));
+  renderEditor();
+  showScreen("editor");
+  $("list-name").focus();
+}
+
+function renderEditor() {
+  $("editor-error").hidden = true;
+  for (const b of $("word-toggles").children) b.setAttribute("aria-pressed", String(editing.words.has(b.dataset.word)));
+  $("editor-count").textContent = `${editing.words.size} of ${data.words.length} selected`;
+}
+
+function saveList() {
+  const name = $("list-name").value.trim();
+  const problem = !name ? "Give the list a name." : !editing.words.size ? "Choose at least one word." : null;
+  if (problem) {
+    $("editor-error").textContent = problem;
+    $("editor-error").hidden = false;
+    return;
+  }
+  // Keep the words in the usual order, not the order they were clicked.
+  quizLists.save({ id: editing.id, name, words: data.words.filter(w => editing.words.has(w)) });
+  showLists();
+}
+
+// ---------- Quiz ----------
+
+function startQuiz(list) {
+  quiz = new Quiz(list);
+  $("playing-list").textContent = list.name;
+  showScreen("practice");
   nextWord();
 }
 
-// ---------- Words ----------
-
-// PRACTICE_WORDS from settings, minus any that have no sign file (e.g. typos).
-// Falls back to every word if none are usable.
-function choosePracticeWords() {
-  const unknown = settings.PRACTICE_WORDS.filter(w => !data.words.includes(w));
-  if (unknown.length) console.warn(`PRACTICE_WORDS: no sign file for ${unknown.join(", ")}; skipping.`);
-  const usable = settings.PRACTICE_WORDS.filter(w => data.words.includes(w));
-  return usable.length ? usable : data.words;
-}
-
-function shuffledDeck() {
-  const words = [...practiceWords];
-  for (let i = words.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [words[i], words[j]] = [words[j], words[i]];
-  }
-  // Don't start a new round with the word we just did.
-  if (words.length > 1 && words[0] === currentWord) words.push(words.shift());
-  return words;
-}
-
 function nextWord() {
-  deckIndex++;
-  if (deckIndex >= deck.length) {
-    deck = shuffledDeck();
-    deckIndex = 0;
-  }
-  currentWord = deck[deckIndex];
+  if (quiz.finished) return showDone();
+  currentWord = quiz.next();
   $("word").textContent = label(currentWord);
-  $("word-position").textContent = `${deckIndex + 1} of ${deck.length}`;
+  updateQuizProgress();
   demo.stop();
   demo = showSignDemo(
     { video: $("demo-video"), canvas: $("demo") },
@@ -107,18 +233,40 @@ function nextWord() {
   showIdle();
 }
 
+function updateQuizProgress() {
+  $("word-position").textContent = `${quiz.correct.size} of ${quiz.words.length} done`;
+}
+
+function showDone() {
+  showScreen("done");
+  const totalTries = Object.values(quiz.tries).reduce((a, b) => a + b, 0);
+  $("done-list").textContent = quiz.list.name;
+  $("done-summary").textContent =
+    `All ${quiz.words.length} word${quiz.words.length === 1 ? "" : "s"} signed correctly in ${totalTries} tr${totalTries === 1 ? "y" : "ies"}`;
+  $("done-words").replaceChildren(...quiz.words.map(word => {
+    const chip = document.createElement("span");
+    chip.className = "done-word";
+    const tries = document.createElement("span");
+    tries.className = "tries";
+    tries.textContent = `${quiz.tries[word]} ${quiz.tries[word] === 1 ? "try" : "tries"}`;
+    chip.append(icon("check"), label(word), tries);
+    return chip;
+  }));
+  confettiFountain($("done").querySelector(".done-card"));
+}
+
 // ---------- Top bar ----------
 
 function renderProgress() {
   $("streak").textContent = progress.streak;
   const squares = $("learned-squares");
-  squares.replaceChildren(...practiceWords.map(word => {
+  squares.replaceChildren(...data.words.map(word => {
     const square = document.createElement("span");
     if (progress.hasLearned(word)) square.className = "on";
     return square;
   }));
-  const learned = practiceWords.filter(w => progress.hasLearned(w)).length;
-  $("learned-count").textContent = `${learned} / ${practiceWords.length}`;
+  const learned = data.words.filter(w => progress.hasLearned(w)).length;
+  $("learned-count").textContent = `${learned} / ${data.words.length}`;
 }
 
 // ---------- Difficulty ----------
@@ -160,7 +308,7 @@ function watchForHands() {
 // ---------- Practice flow ----------
 
 function setBusy(busy) {
-  for (const id of ["start", "next", "result-primary", "result-secondary"]) $(id).disabled = busy;
+  for (const id of ["start", "next", "back-to-lists", "result-primary", "result-secondary"]) $(id).disabled = busy;
 }
 
 function showIdle() {
@@ -180,7 +328,7 @@ function showIdle() {
 // Returns { startSigning(), stop() }: call startSigning at "SIGN NOW!" so the bar's second
 // half starts then (even on a slow computer where the countdown runs late).
 const DIM_SECONDS = 0.3;   // how quickly the camera dims after pressing Start
-const DIMMEST = 0.4;       // brightness at its darkest
+const DIMMEST = 0.25;      // brightness at its darkest
 function animateAttempt() {
   const fill = $("phase-fill"), video = $("video");
   const countdown = settings.COUNTDOWN_SECONDS, record = settings.RECORD_SECONDS;
@@ -243,8 +391,12 @@ async function startAttempt() {
 
     const leniency = currentLeniency();
     const result = gradeAttempt(rawFrames, currentWord, leniency);
-    if (result.kind !== "rejected") progress.recordResult(currentWord, result.kind === "pass");
+    if (result.kind !== "rejected") {
+      progress.recordResult(currentWord, result.kind === "pass");
+      quiz.record(currentWord, result.kind === "pass");
+    }
     renderProgress();
+    updateQuizProgress();
     showResult(result);
     lastAttempt = { word: currentWord, leniency, pass: result.kind === "pass", message: result.title,
       savedAt: new Date().toISOString(), frames: rawFrames };
@@ -316,7 +468,7 @@ export function showResult(result) {
   }
 
   const passed = result.kind === "pass";
-  $("result-primary").textContent = passed ? "NEXT WORD" : "TRY AGAIN";
+  $("result-primary").textContent = passed ? (quiz?.finished ? "FINISH QUIZ" : "NEXT WORD") : "TRY AGAIN";
   $("result-secondary").textContent = passed ? "Try again" : "Next word";
   $("result-primary").onclick = passed ? nextWord : startAttempt;
   $("result-secondary").onclick = passed ? startAttempt : nextWord;
@@ -324,6 +476,7 @@ export function showResult(result) {
   $("result").hidden = false;
   $("turn-actions").hidden = true;
   $("result-actions").hidden = false;
+  if (passed) confettiFountain($("camera-box"));
 }
 
 // Debug only: download the last attempt's tracked points (numbers only, no video)
@@ -346,6 +499,24 @@ function saveLastAttempt() {
 // ---------- Start up ----------
 
 $("begin").onclick = begin;
+$("music-toggle").onclick = () => music.toggle();
+music.onChange(on => {
+  $("music-toggle").setAttribute("aria-pressed", String(on));
+  $("music-label").textContent = on ? "Music on" : "Music off";
+  $("music-icon").setAttribute("href", `assets/icons.svg#${on ? "music-notes" : "speaker-simple-slash"}`);
+});
+$("new-list").onclick = () => openEditor();
+$("new-list-card").onclick = () => openEditor();
+$("editor-back").onclick = showLists;
+$("cancel-edit").onclick = showLists;
+$("save-list").onclick = saveList;
+$("list-name").oninput = () => ($("editor-error").hidden = true);
+$("delete-list").onclick = () => editing.id && deleteList(quizLists.get(editing.id, data.words));
+$("select-all").onclick = () => { editing.words = new Set(data.words); renderEditor(); };
+$("clear-words").onclick = () => { editing.words.clear(); renderEditor(); };
+$("back-to-lists").onclick = showLists;
+$("done-back").onclick = showLists;
+$("play-again").onclick = () => startQuiz(quiz.list);
 $("start").onclick = startAttempt;
 $("next").onclick = nextWord;
 $("replay").onclick = () => demo.replay();
@@ -355,6 +526,8 @@ for (const button of document.querySelectorAll(".pill[data-level]")) {
   button.onclick = () => setDifficulty(button.dataset.level);
 }
 setDifficulty(difficulty);
+// With ?debug, tests can drive the quiz from the browser console.
+if (debugMode) window.aslDebug = { get quiz() { return quiz; }, get word() { return currentWord; }, gradeAttempt, showResult, nextWord };
 
 load().catch(err => {
   console.error(err);

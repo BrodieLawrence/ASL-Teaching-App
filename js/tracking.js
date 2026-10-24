@@ -2,12 +2,13 @@
 // Produces one raw frame per video frame (see recorder.js for the format)
 // and draws the tracked points over the video.
 
-import { FilesetResolver, HandLandmarker, PoseLandmarker }
-  from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs";
+// MediaPipe is hosted with the site (see vendor/mediapipe/README.md), not loaded from a CDN.
+import { FilesetResolver, HandLandmarker, PoseLandmarker } from "../vendor/mediapipe/vision_bundle.mjs";
 
-const WASM_URL = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm";
-const HAND_MODEL = "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task";
-const POSE_MODEL = "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task";
+const VENDOR = new URL("../vendor/mediapipe/", import.meta.url).href;
+const WASM_URL = VENDOR + "wasm";
+const HAND_MODEL = VENDOR + "models/hand_landmarker.task";
+const POSE_MODEL = VENDOR + "models/pose_landmarker_lite.task";
 
 // MediaPipe pose point numbers
 const NOSE = 0, LEFT_SHOULDER = 11, RIGHT_SHOULDER = 12, LEFT_WRIST = 15, RIGHT_WRIST = 16;
@@ -68,6 +69,7 @@ export async function startTracking({ hands, pose }, video, canvas) {
   const listeners = new Set();
   const tracker = {
     recording: false,  // only changes the dot colour
+    paused: false,     // set while the practice screen isn't showing, to save work
     onFrame(fn) { listeners.add(fn); return () => listeners.delete(fn); },
   };
 
@@ -75,7 +77,7 @@ export async function startTracking({ hands, pose }, video, canvas) {
   function loop() {
     const now = performance.now();
     // Only analyse new video frames (the screen usually refreshes faster than the camera).
-    if (video.readyState >= 2 && video.currentTime !== lastVideoTime && now > lastTime) {
+    if (!tracker.paused && video.readyState >= 2 && video.currentTime !== lastVideoTime && now > lastTime) {
       lastVideoTime = video.currentTime;
       lastTime = now;
       const handResult = hands.detectForVideo(video, now);
@@ -127,7 +129,7 @@ function trackingColors(canvas) {
     const style = getComputedStyle(canvas);
     const get = (name, fallback) => style.getPropertyValue(name).trim() || fallback;
     colorCache.set(canvas, {
-      hand: get("--track-hand", "lime"), recording: get("--track-recording", "red"), body: get("--track-body", "cyan"),
+      hand: get("--track-hand", "lime"), recording: get("--track-recording", "red"),
     });
   }
   return colorCache.get(canvas);
@@ -141,7 +143,6 @@ function draw(canvas, handList, posePoints, recording) {
   ctx.fillStyle = recording ? colors.recording : colors.hand;
   for (const hand of handList || []) hand.forEach(p => dot(p, 5));
   if (posePoints) {
-    ctx.fillStyle = colors.body;
     [NOSE, LEFT_SHOULDER, RIGHT_SHOULDER].forEach(i => dot(posePoints[i], 9));
   }
 }

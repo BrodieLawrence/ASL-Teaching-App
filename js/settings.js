@@ -9,9 +9,17 @@ export const DIFFICULTIES = {
 };
 export const DEFAULT_DIFFICULTY = "normal";
 
-// Words that "Next word" can pick. Use [] to allow every word in signs/words.json.
-// Grading always compares against every word, so this only changes what is asked.
-export const PRACTICE_WORDS = ["thankyou", "sleep", "no"];
+// Built-in quiz lists (learners can also make their own, see lists.js).
+// Words not in signs/words.json are skipped. Grading always compares against every word.
+export const DEFAULT_LISTS = [
+  { id: "basics", name: "Everyday basics", words: ["hello", "please", "yes", "water", "hungry", "sleep"] },
+  { id: "family", name: "Family & feelings", words: ["mom", "dad", "girl", "happy", "hungry"] },
+  { id: "animals", name: "Animals", words: ["cow", "horse", "bird"] },
+  { id: "outdoors", name: "Out and about", words: ["tree", "moon", "car", "airplane", "hat", "hot"] },
+  { id: "home", name: "At home", words: ["bath", "sleep", "water", "hot", "hat"] },
+  { id: "all", name: "All 20 words", words: ["hello", "please", "mom", "dad", "yes", "sleep", "water", "hungry", "hot", "happy",
+    "cow", "bird", "horse", "tree", "airplane", "car", "girl", "hat", "moon", "bath"] },
+];
 
 // How words are shown to learners. The dataset writes some words without spaces.
 export const WORD_LABELS = {

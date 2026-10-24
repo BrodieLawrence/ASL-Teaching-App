@@ -71,7 +71,7 @@ sign than to frustrate someone who signed correctly.
   `--primary`, `--secondary`, `--accent`, `--highlight`). Text colours are
   worked out from them automatically.
 - **Fonts:** `--font-display` (headings, buttons) and `--font-body` in
-  `style.css`, loaded from Google Fonts in `index.html`.
+  `style.css`; the font files are in `assets/fonts` (SIL Open Font License).
 - **Icons:** [Phosphor](https://phosphoricons.com) duotone icons in
   `assets/icons.svg` (MIT licence, `assets/LICENSE-phosphor.txt`).
 
@@ -123,6 +123,21 @@ of saved attempts with:
 ```
 node tools/evaluate_attempts.js path/to/attempts
 ```
+
+## Privacy and security
+
+- **No server, no accounts.** The site is static files on GitHub Pages; everything runs
+  in the browser.
+- **Nothing leaves the device.** Camera video and the tracked hand points are only used
+  in the browser's memory to grade the attempt. The page never uploads anything; the
+  only network requests are for its own files.
+- **No third-party code or services at run time.** MediaPipe's tracking code and models
+  (`vendor/mediapipe`, with checksums in its README) and the fonts (`assets/fonts`) are
+  hosted with the site.
+- **Content Security Policy** (in `index.html`): the page may only load from and connect
+  to its own site.
+- **Saved data** (streak, words learned, settings, quiz lists) stays in the browser's
+  local storage and is checked when read.
 
 ## Data
 
