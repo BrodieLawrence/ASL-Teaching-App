@@ -78,10 +78,11 @@ export function playSignDemo(canvas, sequence) {
   return () => { running = false; };
 }
 
-// Shows the word's video if it exists, otherwise the stick figure.
-// Returns { stop, replay }.
-export function showSignDemo({ video, canvas }, videoUrl, sequence) {
+// Shows how to sign a word: its YouTube video if it has one, otherwise its own video file
+// if it exists, otherwise the stick figure. Returns { stop, replay }.
+export function showSignDemo({ youtube, video, canvas }, { youtubeVideo, videoUrl, sequence }) {
   let stopped = false, stopFigure = null;
+  youtube.hidden = video.hidden = canvas.hidden = true;
 
   function useStickFigure() {
     if (stopped || stopFigure) return;
@@ -93,18 +94,21 @@ export function showSignDemo({ video, canvas }, videoUrl, sequence) {
 
   function useVideo() {
     if (stopped) return;
-    canvas.hidden = true;
     video.hidden = false;
     video.onerror = useStickFigure;  // e.g. a format this browser can't play
     video.src = videoUrl;
     video.play().catch(() => {});   // muted videos are allowed to autoplay
   }
 
-  // Check whether this word has a video before choosing what to show.
-  video.hidden = canvas.hidden = true;
-  fetch(videoUrl, { method: "HEAD" })
-    .then(response => (response.ok ? useVideo() : useStickFigure()))
-    .catch(useStickFigure);
+  if (youtubeVideo) {
+    youtube.src = youtubeUrl(youtubeVideo);
+    youtube.hidden = false;
+  } else {
+    // Check whether this word has a video file before choosing what to show.
+    fetch(videoUrl, { method: "HEAD" })
+      .then(response => (response.ok ? useVideo() : useStickFigure()))
+      .catch(useStickFigure);
+  }
 
   return {
     stop() {
@@ -112,10 +116,14 @@ export function showSignDemo({ video, canvas }, videoUrl, sequence) {
       video.onerror = null;
       video.pause();
       if (stopFigure) stopFigure();
+      youtube.removeAttribute("src");  // stops the YouTube player
+      youtube.hidden = true;
     },
     replay() {
       if (stopped) return;
-      if (stopFigure) {
+      if (youtubeVideo) {
+        youtube.src = youtubeUrl(youtubeVideo);  // reloading restarts it from the beginning
+      } else if (stopFigure) {
         stopFigure();
         stopFigure = playSignDemo(canvas, sequence);
       } else {
@@ -124,4 +132,16 @@ export function showSignDemo({ video, canvas }, videoUrl, sequence) {
       }
     },
   };
+}
+
+// YouTube's privacy-enhanced player: autoplays muted, loops, no controls or suggestions.
+function youtubeUrl(entry) {
+  const { id, start, end } = typeof entry === "string" ? { id: entry } : entry;
+  const params = new URLSearchParams({
+    autoplay: "1", mute: "1", loop: "1", playlist: id, controls: "0", rel: "0",
+    playsinline: "1", modestbranding: "1", iv_load_policy: "3", disablekb: "1",
+  });
+  if (start) params.set("start", String(start));
+  if (end) params.set("end", String(end));
+  return `https://www.youtube-nocookie.com/embed/${encodeURIComponent(id)}?${params}`;
 }
