@@ -11,12 +11,16 @@ const round = v => Math.round(v * 1000) / 1000;
 const examples = readJson("./cache/examples.json");
 const words = [...new Set(examples.map(e => e.word))];
 
-const signs = words.map(word => {
+const signs = words.flatMap(word => {
   const sequences = examples
     .filter(e => e.word === word)
     .map(e => toSequence(e.frames)?.sequence)
     .filter(Boolean)
     .map(seq => seq.map(hand => hand.map(round)));
+  if (!sequences.length) {
+    console.warn(`${word}: no usable examples (hand rarely visible), skipping this word`);
+    return [];
+  }
   // The demo example is the most typical one: closest on average to all the others.
   const features = sequences.map(toFeatures);
   const totals = features.map(a => features.reduce((sum, b) => sum + dtwDistance(a, b), 0));
@@ -29,7 +33,7 @@ const signs = words.map(word => {
     `  "demoIndex": ${demoIndex},\n` +
     `  "examples": [\n${body}\n  ]\n}\n`);
   console.log(`${word}: ${sequences.length} examples`);
-  return { word, examples: features };
+  return [{ word, examples: features }];
 });
 
 const correctDistances = rankHoldout(signs)
@@ -39,5 +43,5 @@ const correctDistances = rankHoldout(signs)
 const distanceLimit = round(correctDistances[Math.floor(0.9 * (correctDistances.length - 1))]);
 
 writeFileSync(new URL("../signs/words.json", import.meta.url),
-  JSON.stringify({ words, distanceLimit }, null, 2) + "\n");
+  JSON.stringify({ words: signs.map(s => s.word), distanceLimit }, null, 2) + "\n");
 console.log(`distanceLimit = ${distanceLimit}. Run "node tools/evaluate.js" to see accuracy.`);

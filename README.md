@@ -52,6 +52,10 @@ Tested on recordings from 3 signers whose recordings are not in the examples
 | **1.25 (default)** | **87%** | **30%** |
 | 2.0 | 92% | 42% |
 
+These numbers come from a small test (60 recordings), so treat them as roughly
+±10%. The grading distance limit was also set using these same recordings, so
+they are somewhat optimistic.
+
 The default favors the learner: it is better to occasionally accept a sloppy
 sign than to frustrate someone who signed correctly.
 

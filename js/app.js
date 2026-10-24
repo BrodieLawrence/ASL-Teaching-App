@@ -11,15 +11,26 @@ let data = null;
 let tracker = null;
 let currentWord = null;
 let stopDemo = () => {};
+let practiceWords = [];
 
 function showStatus(text, kind = "") {
   $("status").textContent = text;
   $("status").className = kind;
 }
 
+// PRACTICE_WORDS from settings, minus any that have no sign file (e.g. typos).
+// Falls back to every word if none are usable.
+function choosePracticeWords() {
+  const unknown = settings.PRACTICE_WORDS.filter(w => !data.words.includes(w));
+  if (unknown.length) console.warn(`PRACTICE_WORDS: no sign file for ${unknown.join(", ")}; skipping.`);
+  const usable = settings.PRACTICE_WORDS.filter(w => data.words.includes(w));
+  return usable.length ? usable : data.words;
+}
+
 function nextWord() {
-  const pool = settings.PRACTICE_WORDS.length ? settings.PRACTICE_WORDS : data.words;
-  const choices = pool.filter(w => w !== currentWord);
+  // Pick a different word than last time, unless there is only one word.
+  const others = practiceWords.filter(w => w !== currentWord);
+  const choices = others.length ? others : practiceWords;
   currentWord = choices[Math.floor(Math.random() * choices.length)];
   $("word").textContent = currentWord;
   $("details").textContent = "";
@@ -48,25 +59,40 @@ export function gradeAttempt(rawFrames, word, leniency) {
   };
 }
 
+// Leniency from the input box, kept within a sensible range.
+function readLeniency() {
+  const value = parseFloat($("leniency").value);
+  if (!(value > 0)) return settings.DEFAULT_LENIENCY;
+  return Math.min(3, Math.max(0.25, value));
+}
+
 async function onStart() {
   $("start").disabled = $("next").disabled = true;
   $("details").textContent = "";
-  const rawFrames = await recordAttempt(tracker, {
-    countdownSeconds: settings.COUNTDOWN_SECONDS,
-    recordSeconds: settings.RECORD_SECONDS,
-    onStatus: showStatus,
-  });
-  const leniency = parseFloat($("leniency").value) || settings.DEFAULT_LENIENCY;
-  const result = gradeAttempt(rawFrames, currentWord, leniency);
-  showStatus(result.message, result.pass ? "pass" : "fail");
-  $("details").textContent = result.details || "";
-  $("start").disabled = $("next").disabled = false;
+  try {
+    const rawFrames = await recordAttempt(tracker, {
+      countdownSeconds: settings.COUNTDOWN_SECONDS,
+      recordSeconds: settings.RECORD_SECONDS,
+      onStatus: showStatus,
+    });
+    const leniency = readLeniency();
+    const result = gradeAttempt(rawFrames, currentWord, leniency);
+    showStatus(result.message, result.pass ? "pass" : "fail");
+    $("details").textContent = result.details || "";
+  } catch (err) {
+    console.error(err);
+    showStatus(`Something went wrong: ${err.message}. Please try again.`, "fail");
+  } finally {
+    // Always give the buttons back, even if something failed.
+    $("start").disabled = $("next").disabled = false;
+  }
 }
 
 async function main() {
   $("leniency").value = settings.DEFAULT_LENIENCY;
   showStatus("Loading signs and hand tracking...");
   data = await loadSigns();
+  practiceWords = choosePracticeWords();
   tracker = await startTracking($("video"), $("overlay"));
   $("next").onclick = nextWord;
   $("start").onclick = onStart;
@@ -77,5 +103,7 @@ async function main() {
 
 main().catch(err => {
   console.error(err);
-  showStatus(`Error: ${err.message}. Allow camera access and use Chrome.`, "fail");
+  // Camera problems (permission denied, no camera) get a hint; other errors are shown as-is.
+  const cameraProblem = ["NotAllowedError", "NotFoundError", "NotReadableError"].includes(err.name);
+  showStatus(`Error: ${err.message}${cameraProblem ? ". Allow camera access and use Chrome." : ""}`, "fail");
 });

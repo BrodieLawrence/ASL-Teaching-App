@@ -12,13 +12,26 @@ const POSE_MODEL = "https://storage.googleapis.com/mediapipe-models/pose_landmar
 // MediaPipe pose point numbers
 const NOSE = 0, LEFT_SHOULDER = 11, RIGHT_SHOULDER = 12, LEFT_WRIST = 15, RIGHT_WRIST = 16;
 
+// If the body isn't detected for this many video frames in a row, stop using its last position.
+const POSE_MEMORY_FRAMES = 15;
+
+// Use the graphics card if possible; some computers can't, so fall back to the processor.
+async function createModel(Model, vision, options) {
+  try {
+    return await Model.createFromOptions(vision, { ...options, baseOptions: { ...options.baseOptions, delegate: "GPU" } });
+  } catch (err) {
+    console.warn("GPU tracking unavailable, using CPU instead:", err);
+    return await Model.createFromOptions(vision, { ...options, baseOptions: { ...options.baseOptions, delegate: "CPU" } });
+  }
+}
+
 export async function startTracking(video, canvas) {
   const vision = await FilesetResolver.forVisionTasks(WASM_URL);
-  const hands = await HandLandmarker.createFromOptions(vision, {
-    baseOptions: { modelAssetPath: HAND_MODEL, delegate: "GPU" }, runningMode: "VIDEO", numHands: 2,
+  const hands = await createModel(HandLandmarker, vision, {
+    baseOptions: { modelAssetPath: HAND_MODEL }, runningMode: "VIDEO", numHands: 2,
   });
-  const pose = await PoseLandmarker.createFromOptions(vision, {
-    baseOptions: { modelAssetPath: POSE_MODEL, delegate: "GPU" }, runningMode: "VIDEO", numPoses: 1,
+  const pose = await createModel(PoseLandmarker, vision, {
+    baseOptions: { modelAssetPath: POSE_MODEL }, runningMode: "VIDEO", numPoses: 1,
   });
 
   video.srcObject = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
@@ -32,14 +45,21 @@ export async function startTracking(video, canvas) {
     onFrame(fn) { listeners.add(fn); return () => listeners.delete(fn); },
   };
 
-  let lastPose = null, lastTime = -1;
+  let lastPose = null, framesWithoutPose = 0, lastVideoTime = -1, lastTime = -1;
   function loop() {
     const now = performance.now();
-    if (video.readyState >= 2 && now > lastTime) {
+    // Only analyse new video frames (the screen usually refreshes faster than the camera).
+    if (video.readyState >= 2 && video.currentTime !== lastVideoTime && now > lastTime) {
+      lastVideoTime = video.currentTime;
       lastTime = now;
       const handResult = hands.detectForVideo(video, now);
       const poseResult = pose.detectForVideo(video, now);
-      if (poseResult.landmarks?.[0]) lastPose = poseResult.landmarks[0];
+      if (poseResult.landmarks?.[0]) {
+        lastPose = poseResult.landmarks[0];
+        framesWithoutPose = 0;
+      } else if (++framesWithoutPose > POSE_MEMORY_FRAMES) {
+        lastPose = null;
+      }
       draw(canvas, handResult.landmarks, lastPose, tracker.recording);
       const frame = makeFrame(handResult.landmarks, lastPose);
       listeners.forEach(fn => fn(frame));
