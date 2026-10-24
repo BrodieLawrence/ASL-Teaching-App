@@ -16,7 +16,7 @@ console.log(`${results.length} test recordings, ${results.length - graded.length
 console.log(`Closest word is correct: ${pct(top1, graded.length)}; correct word in closest 3: ${pct(top3, graded.length)}\n`);
 
 console.log("Leniency | correct sign passes | a different sign passes");
-for (const leniency of [0.5, 0.75, 1, 1.25, 1.5, 2]) {
+for (const leniency of [0.5, 0.7, 1, 1.25, 1.5, 2]) {
   let correct = 0, wrong = 0, wrongTotal = 0;
   for (const r of results) {
     for (const word of words) {

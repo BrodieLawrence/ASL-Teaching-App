@@ -3,41 +3,162 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>ASL Sign Check</title>
+  <title>ASL Masters</title>
+  <meta name="description" content="Practice ASL vocabulary with your webcam: watch a sign, try it, get instant feedback.">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@500;700;800&display=swap">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>ASL Sign Check</h1>
-  <p>Sign this word:</p>
-  <div id="word">...</div>
+  <header class="topbar">
+    <div class="logo">
+      <span class="logo-tile"><svg class="icon"><use href="assets/icons.svg#hand-waving"></use></svg></span>
+      <span class="logo-text"><span class="logo-asl">ASL</span> MASTERS</span>
+    </div>
+    <div class="stats">
+      <div class="stat-chip" title="Correct signs in a row">
+        <svg class="icon icon-star"><use href="assets/icons.svg#star"></use></svg>
+        Streak <span id="streak">0</span>
+      </div>
+      <div class="stat-chip" title="Words you've signed correctly at least once">
+        Words learned
+        <span id="learned-squares" class="learned-squares" aria-hidden="true"></span>
+        <span id="learned-count" class="learned-count">0 / 0</span>
+      </div>
+    </div>
+  </header>
 
-  <!-- How to do the sign: a video from videos/<word>.mp4 if there is one,
-       otherwise a stick figure drawn from the example data (see js/demo.js). -->
-  <p>How to sign it:</p>
-  <video id="demo-video" muted loop playsinline hidden></video>
-  <canvas id="demo" width="320" height="260"></canvas>
+  <main>
+    <!-- Welcome: shown while the hand tracking loads. -->
+    <section id="welcome" class="welcome">
+      <div class="welcome-intro">
+        <p class="eyebrow">Vocabulary practice for ASL students</p>
+        <h1 class="welcome-title">Level up your <span class="accent-text">ASL</span> vocabulary</h1>
+        <p class="welcome-lede">Watch a sign, try it on your webcam, and get instant feedback. Made to practice alongside your ASL class, not to replace it.</p>
+        <div class="loading">
+          <div class="loading-label"><span id="load-text">Loading signs…</span><span id="load-percent" class="loading-percent">0%</span></div>
+          <div class="bar" aria-hidden="true"><div id="load-bar" class="bar-fill"></div></div>
+        </div>
+        <div class="welcome-actions">
+          <button id="begin" class="btn btn-primary btn-big" disabled>START PRACTICING</button>
+          <span class="privacy">
+            <svg class="icon"><use href="assets/icons.svg#lock"></use></svg>
+            Your video never leaves your device
+          </span>
+        </div>
+        <p id="welcome-error" class="error-box" hidden></p>
+      </div>
+      <div class="panel how-it-works">
+        <h2 class="panel-title">How it works</h2>
+        <ol class="steps">
+          <li><span class="step-number">1</span><div><strong>Watch</strong><span>A short video shows the sign.</span></div></li>
+          <li><span class="step-number">2</span><div><strong>Sign</strong><span>Copy it on your webcam after the 3-2-1.</span></div></li>
+          <li><span class="step-number">3</span><div><strong>Get feedback</strong><span>See if you nailed it, or what it looked like instead.</span></div></li>
+        </ol>
+        <p class="muted">You need a webcam and Chrome or Edge.</p>
+      </div>
+    </section>
 
-  <p>
-    <button id="next">Next word</button>
-    <button id="start" disabled>Start (3-2-1, then sign)</button>
-    <label>Leniency <input id="leniency" type="number" step="0.25" min="0.25" max="3"></label>
-  </p>
+    <!-- Practice: the main screen. -->
+    <section id="practice" class="practice" hidden>
+      <div class="word-row">
+        <div class="word-card">
+          <div class="word-card-top"><span class="tag">YOUR WORD</span><span id="word-position" class="muted strong"></span></div>
+          <div id="word" class="word">…</div>
+        </div>
+        <div class="difficulty" role="group" aria-label="Difficulty">
+          <span class="eyebrow">DIFFICULTY</span>
+          <button class="pill" data-level="easy">Easy</button>
+          <button class="pill" data-level="normal">Normal</button>
+          <button class="pill" data-level="hard">Hard</button>
+        </div>
+      </div>
 
-  <!-- Testing tools, only shown when the address ends with ?debug -->
-  <p id="debug-tools" hidden>
-    <label><input type="checkbox" id="wrong-on-purpose"> I signed it wrong on purpose</label>
-    <button id="save" disabled>Save last attempt</button>
-  </p>
+      <div class="panels">
+        <div class="panel">
+          <div class="panel-head">
+            <h2 class="panel-title"><span class="step-number">1</span>Watch</h2>
+          </div>
+          <div class="media demo-box">
+            <video id="demo-video" muted loop playsinline hidden></video>
+            <canvas id="demo" width="400" height="300" hidden></canvas>
+          </div>
+          <div class="panel-actions">
+            <button id="replay" class="btn btn-quiet">
+              <svg class="icon"><use href="assets/icons.svg#arrow-counter-clockwise"></use></svg>
+              Replay
+            </button>
+          </div>
+        </div>
 
-  <div id="status"></div>
+        <div class="panel">
+          <div class="panel-head">
+            <h2 class="panel-title"><span class="step-number">2</span>Your turn</h2>
+            <span id="hand-chip" class="hand-chip" data-on="false">
+              <svg class="icon"><use href="assets/icons.svg#hand-palm"></use></svg>
+              <span id="hand-chip-text">Show your hand</span>
+            </span>
+          </div>
+          <div id="camera-box" class="media camera-box">
+            <video id="video" autoplay playsinline muted></video>
+            <canvas id="overlay"></canvas>
+            <div class="frame-guide" aria-hidden="true"><div class="guide-head"></div><div class="guide-shoulders"></div></div>
+            <span class="camera-label">Fit your head and shoulders in the outline</span>
 
-  <!-- The video is mirrored so it feels like a mirror; the tracked points are drawn on top. -->
-  <div id="stage">
-    <video id="video" autoplay playsinline muted></video>
-    <canvas id="overlay"></canvas>
-  </div>
-  <p>Keep your head, shoulders and hands in view.</p>
-  <div id="details"></div>
+            <div id="countdown" class="countdown" hidden>
+              <div id="count-number" class="count-number">3</div>
+              <div id="count-label" class="count-label frosted">Get ready…</div>
+            </div>
+
+            <div id="result" class="result" hidden>
+              <svg id="result-icon" class="icon result-icon"><use href="assets/icons.svg#star"></use></svg>
+              <div id="result-title" class="result-title"></div>
+              <div id="result-message" class="result-message"></div>
+              <div id="result-tip" class="muted result-tip"></div>
+              <details id="result-details" class="result-details">
+                <summary>Show details</summary>
+                <pre id="details"></pre>
+              </details>
+            </div>
+
+            <div id="phase-bar" class="phase frosted" hidden>
+              <div class="phase-labels"><span>GET READY</span><span>SIGN</span><span>DONE</span></div>
+              <div class="bar" aria-hidden="true"><div id="phase-fill" class="bar-fill"></div></div>
+            </div>
+          </div>
+
+          <div id="turn-actions" class="panel-actions">
+            <button id="start" class="btn btn-primary btn-big">START</button>
+            <span class="muted strong">3-2-1, then sign it once</span>
+          </div>
+          <div id="result-actions" class="panel-actions" hidden>
+            <button id="result-primary" class="btn btn-primary btn-big"></button>
+            <button id="result-secondary" class="btn btn-quiet"></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="practice-footer">
+        <button id="next" class="btn btn-quiet">
+          Skip to next word
+          <svg class="icon"><use href="assets/icons.svg#arrow-right"></use></svg>
+        </button>
+        <span class="privacy">
+          <svg class="icon"><use href="assets/icons.svg#lock"></use></svg>
+          Your video never leaves your device
+        </span>
+      </div>
+
+      <!-- Testing tools, only shown when the address ends with ?debug -->
+      <div id="debug-tools" class="debug-tools" hidden>
+        <label>Leniency <input id="leniency" type="number" step="0.25" min="0.25" max="3"></label>
+        <label><input type="checkbox" id="wrong-on-purpose"> I signed it wrong on purpose</label>
+        <button id="save" class="btn btn-quiet" disabled>Save last attempt</button>
+      </div>
+    </section>
+  </main>
 
   <script type="module" src="js/app.js"></script>
 </body>

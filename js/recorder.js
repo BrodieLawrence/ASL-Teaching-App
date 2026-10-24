@@ -29,13 +29,8 @@ export function toBodyCoordinates(rawFrames) {
 
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 
-// Counts down, then collects raw frames from the tracker for recordSeconds.
-export async function recordAttempt(tracker, { countdownSeconds, recordSeconds, onStatus }) {
-  for (let i = countdownSeconds; i > 0; i--) {
-    onStatus(`Get ready... ${i}`);
-    await wait(1000);
-  }
-  onStatus("SIGN NOW!");
+// Collects raw frames from the tracker for the given number of seconds.
+export async function captureFrames(tracker, recordSeconds) {
   const frames = [];
   const stop = tracker.onFrame(frame => frames.push(frame));
   tracker.recording = true;
