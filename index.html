@@ -5,8 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <!-- Security policy: the page may only load code, styles, fonts, media and data from this
        site, and can't send data anywhere else. 'wasm-unsafe-eval' lets MediaPipe run its
-       WebAssembly hand-tracking code (hosted here, see vendor/mediapipe/README.md). -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; img-src 'self' data: blob:; media-src 'self' blob:; font-src 'self'; connect-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'none'; upgrade-insecure-requests">
+       WebAssembly hand-tracking code (hosted here, see vendor/mediapipe/README.md).
+       frame-src allows only YouTube's privacy-enhanced player for demonstration videos. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; img-src 'self' data: blob:; media-src 'self' blob:; font-src 'self'; connect-src 'self'; worker-src 'self' blob:; frame-src https://www.youtube-nocookie.com; object-src 'none'; base-uri 'self'; form-action 'none'; upgrade-insecure-requests">
   <meta name="referrer" content="no-referrer">
   <title>ASL Masters</title>
   <meta name="description" content="Practice ASL vocabulary with your webcam: watch a sign, try it, get instant feedback.">
@@ -156,6 +157,9 @@
             <h2 class="panel-title"><span class="step-number">1</span>Watch</h2>
           </div>
           <div class="media demo-box">
+            <iframe id="demo-youtube" title="Demonstration video" hidden
+              allow="autoplay; encrypted-media; picture-in-picture"
+              referrerpolicy="strict-origin-when-cross-origin"></iframe>
             <video id="demo-video" muted loop playsinline hidden></video>
             <canvas id="demo" width="400" height="300" hidden></canvas>
           </div>

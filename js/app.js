@@ -227,9 +227,12 @@ function nextWord() {
   updateQuizProgress();
   demo.stop();
   demo = showSignDemo(
-    { video: $("demo-video"), canvas: $("demo") },
-    `${settings.VIDEO_FOLDER}${currentWord}.mp4`,
-    data.signs.find(s => s.word === currentWord).demo);
+    { youtube: $("demo-youtube"), video: $("demo-video"), canvas: $("demo") },
+    {
+      youtubeVideo: settings.YOUTUBE_VIDEOS[currentWord],
+      videoUrl: `${settings.VIDEO_FOLDER}${currentWord}.mp4`,
+      sequence: data.signs.find(s => s.word === currentWord).demo,
+    });
   showIdle();
 }
 
