@@ -1,0 +1,25 @@
+{
+  "words": [
+    "hello",
+    "please",
+    "mom",
+    "dad",
+    "yes",
+    "sleep",
+    "water",
+    "hungry",
+    "hot",
+    "happy",
+    "cow",
+    "bird",
+    "horse",
+    "tree",
+    "airplane",
+    "car",
+    "girl",
+    "hat",
+    "moon",
+    "bath"
+  ],
+  "distanceLimit": 0.794
+}

@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Security policy: the page may only load code, styles, fonts, media and data from this
+       site, and can't send data anywhere else. 'wasm-unsafe-eval' lets MediaPipe run its
+       WebAssembly hand-tracking code (hosted here, see vendor/mediapipe/README.md). -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; img-src 'self' data: blob:; media-src 'self' blob:; font-src 'self'; connect-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'none'; upgrade-insecure-requests">
+  <meta name="referrer" content="no-referrer">
+  <title>ASL Masters</title>
+  <meta name="description" content="Practice ASL vocabulary with your webcam: watch a sign, try it, get instant feedback.">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="logo">
+      <span class="logo-tile"><svg class="icon"><use href="assets/icons.svg#hand-waving"></use></svg></span>
+      <span class="logo-text"><span class="logo-asl">ASL</span> MASTERS</span>
+    </div>
+    <div class="stats">
+      <button id="music-toggle" class="stat-chip music-toggle" aria-pressed="true" title="Background music">
+        <svg class="icon"><use id="music-icon" href="assets/icons.svg#music-notes"></use></svg>
+        <span id="music-label">Music on</span>
+      </button>
+      <div class="stat-chip" title="Correct signs in a row">
+        <svg class="icon icon-star"><use href="assets/icons.svg#star"></use></svg>
+        Streak <span id="streak">0</span>
+      </div>
+      <div class="stat-chip" title="Words you've signed correctly at least once">
+        Words learned
+        <span id="learned-squares" class="learned-squares" aria-hidden="true"></span>
+        <span id="learned-count" class="learned-count">0 / 0</span>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- Welcome: shown while the hand tracking loads. -->
+    <section id="welcome" class="welcome">
+      <div class="welcome-intro">
+        <p class="eyebrow">Vocabulary practice for ASL students</p>
+        <h1 class="welcome-title">Level up your <span class="accent-text">ASL</span> vocabulary</h1>
+        <p class="welcome-lede">Watch a sign, try it on your webcam, and get instant feedback. Made to practice alongside your ASL class, not to replace it.</p>
+        <div class="loading">
+          <div class="loading-label"><span id="load-text">Loading signs…</span><span id="load-percent" class="loading-percent">0%</span></div>
+          <div class="bar" aria-hidden="true"><div id="load-bar" class="bar-fill"></div></div>
+        </div>
+        <div class="welcome-actions">
+          <button id="begin" class="btn btn-primary btn-big" disabled>START PRACTICING</button>
+          <span class="privacy">
+            <svg class="icon"><use href="assets/icons.svg#lock"></use></svg>
+            Your video never leaves your device
+          </span>
+        </div>
+        <p id="welcome-error" class="error-box" hidden></p>
+      </div>
+      <div class="panel how-it-works">
+        <h2 class="panel-title">How it works</h2>
+        <ol class="steps">
+          <li><span class="step-number">1</span><div><strong>Watch</strong><span>A short video shows the sign.</span></div></li>
+          <li><span class="step-number">2</span><div><strong>Sign</strong><span>Copy it on your webcam after the 3-2-1.</span></div></li>
+          <li><span class="step-number">3</span><div><strong>Get feedback</strong><span>See if you nailed it, or what it looked like instead.</span></div></li>
+        </ol>
+        <p class="muted">You need a webcam and Chrome or Edge.</p>
+      </div>
+    </section>
+
+    <!-- Quiz lists: pick a list to practise, or make your own. -->
+    <section id="lists" class="lists" hidden>
+      <div class="screen-head">
+        <div>
+          <h1 class="screen-title">Choose a quiz list</h1>
+          <p class="screen-lede">Pick a list to practice, or make your own from any of the <span id="word-total">20</span> words.</p>
+        </div>
+        <button id="new-list" class="btn btn-primary btn-big"><svg class="icon"><use href="assets/icons.svg#plus"></use></svg>NEW LIST</button>
+      </div>
+      <p class="eyebrow">Default lists</p>
+      <div id="default-lists" class="list-grid"></div>
+      <p class="eyebrow">My lists</p>
+      <div id="my-lists" class="list-grid">
+        <button id="new-list-card" class="new-list-card">
+          <span class="new-list-plus"><svg class="icon"><use href="assets/icons.svg#plus"></use></svg></span>
+          <span class="new-list-title">Make a new list</span>
+          <span class="muted strong">Pick any of the words</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- Make or edit a quiz list. -->
+    <section id="editor" class="editor" hidden>
+      <div><button id="editor-back" class="btn btn-quiet"><svg class="icon"><use href="assets/icons.svg#arrow-left"></use></svg>Back to lists</button></div>
+      <h1 id="editor-title" class="screen-title">New quiz list</h1>
+      <div class="panel editor-panel">
+        <div class="field">
+          <label for="list-name" class="eyebrow">List name</label>
+          <input id="list-name" class="text-input" maxlength="40" autocomplete="off">
+        </div>
+        <div class="editor-words-head">
+          <div><span class="eyebrow">Choose words</span> <span id="editor-count" class="editor-count"></span></div>
+          <div class="panel-actions">
+            <button id="select-all" class="btn btn-quiet"><svg class="icon"><use href="assets/icons.svg#list-checks"></use></svg>Select all</button>
+            <button id="clear-words" class="btn btn-quiet">Clear</button>
+          </div>
+        </div>
+        <div id="word-toggles" class="word-toggles"></div>
+      </div>
+      <div class="editor-actions">
+        <div class="panel-actions">
+          <button id="save-list" class="btn btn-primary btn-big"><svg class="icon"><use href="assets/icons.svg#check"></use></svg>SAVE LIST</button>
+          <button id="cancel-edit" class="btn btn-quiet">Cancel</button>
+        </div>
+        <button id="delete-list" class="btn btn-quiet"><svg class="icon"><use href="assets/icons.svg#trash"></use></svg>Delete list</button>
+      </div>
+      <p id="editor-error" class="error-box" hidden></p>
+    </section>
+
+    <!-- Shown when every word in the list has been signed correctly. -->
+    <section id="done" class="done" hidden>
+      <div class="done-card">
+        <svg class="icon done-icon"><use href="assets/icons.svg#trophy"></use></svg>
+        <h1 class="done-title">Quiz complete!</h1>
+        <p id="done-list" class="muted strong"></p>
+        <p id="done-summary" class="done-summary"></p>
+        <div id="done-words" class="done-words"></div>
+        <div class="panel-actions done-actions">
+          <button id="play-again" class="btn btn-primary btn-big"><svg class="icon"><use href="assets/icons.svg#arrows-clockwise"></use></svg>PLAY AGAIN</button>
+          <button id="done-back" class="btn btn-quiet"><svg class="icon"><use href="assets/icons.svg#arrow-left"></use></svg>Back to lists</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Practice: the main screen. -->
+    <section id="practice" class="practice" hidden>
+      <div class="practice-top">
+        <button id="back-to-lists" class="btn btn-quiet"><svg class="icon"><use href="assets/icons.svg#arrow-left"></use></svg>Quiz lists</button>
+        <span class="muted strong">Playing: <span id="playing-list" class="playing-list"></span></span>
+      </div>
+      <div class="word-row">
+        <div class="word-card">
+          <div class="word-card-top"><span class="tag">YOUR WORD</span><span id="word-position" class="muted strong"></span></div>
+          <div id="word" class="word">…</div>
+        </div>
+        <div class="difficulty" role="group" aria-label="Difficulty">
+          <span class="eyebrow">DIFFICULTY</span>
+          <button class="pill" data-level="easy">Easy</button>
+          <button class="pill" data-level="normal">Normal</button>
+          <button class="pill" data-level="hard">Hard</button>
+        </div>
+      </div>
+
+      <div class="panels">
+        <div class="panel">
+          <div class="panel-head">
+            <h2 class="panel-title"><span class="step-number">1</span>Watch</h2>
+          </div>
+          <div class="media demo-box">
+            <video id="demo-video" muted loop playsinline hidden></video>
+            <canvas id="demo" width="400" height="300" hidden></canvas>
+          </div>
+          <div class="panel-actions">
+            <button id="replay" class="btn btn-quiet">
+              <svg class="icon"><use href="assets/icons.svg#arrow-counter-clockwise"></use></svg>
+              Replay
+            </button>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h2 class="panel-title"><span class="step-number">2</span>Your turn</h2>
+            <span id="hand-chip" class="hand-chip" data-on="false">
+              <svg class="icon"><use href="assets/icons.svg#hand-palm"></use></svg>
+              <span id="hand-chip-text">Show your hand</span>
+            </span>
+          </div>
+          <div id="camera-box" class="media camera-box">
+            <video id="video" autoplay playsinline muted></video>
+            <canvas id="overlay"></canvas>
+            <div class="frame-guide" aria-hidden="true"><div class="guide-head"></div><div class="guide-shoulders"></div></div>
+            <span class="camera-label">Fit your head and shoulders in the outline</span>
+
+            <div id="countdown" class="countdown" hidden>
+              <div id="count-number" class="count-number">3</div>
+              <div id="count-label" class="count-label frosted">Get ready…</div>
+            </div>
+
+            <div id="result" class="result" hidden>
+              <svg id="result-icon" class="icon result-icon"><use href="assets/icons.svg#star"></use></svg>
+              <div id="result-title" class="result-title"></div>
+              <div id="result-message" class="result-message"></div>
+              <div id="result-tip" class="muted result-tip"></div>
+              <details id="result-details" class="result-details">
+                <summary>Show details</summary>
+                <pre id="details"></pre>
+              </details>
+            </div>
+
+            <div id="phase-bar" class="phase frosted" hidden>
+              <div class="phase-labels"><span>GET READY</span><span>SIGN</span><span>DONE</span></div>
+              <div class="bar" aria-hidden="true"><div id="phase-fill" class="bar-fill"></div></div>
+            </div>
+          </div>
+
+          <div id="turn-actions" class="panel-actions">
+            <button id="start" class="btn btn-primary btn-big">START</button>
+            <span class="muted strong">3-2-1, then sign it once</span>
+          </div>
+          <div id="result-actions" class="panel-actions" hidden>
+            <button id="result-primary" class="btn btn-primary btn-big"></button>
+            <button id="result-secondary" class="btn btn-quiet"></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="practice-footer">
+        <button id="next" class="btn btn-quiet">
+          Skip to next word
+          <svg class="icon"><use href="assets/icons.svg#arrow-right"></use></svg>
+        </button>
+        <span class="privacy">
+          <svg class="icon"><use href="assets/icons.svg#lock"></use></svg>
+          Your video never leaves your device
+        </span>
+      </div>
+
+      <!-- Testing tools, only shown when the address ends with ?debug -->
+      <div id="debug-tools" class="debug-tools" hidden>
+        <label>Leniency <input id="leniency" type="number" step="0.25" min="0.25" max="3"></label>
+        <label><input type="checkbox" id="wrong-on-purpose"> I signed it wrong on purpose</label>
+        <button id="save" class="btn btn-quiet" disabled>Save last attempt</button>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
